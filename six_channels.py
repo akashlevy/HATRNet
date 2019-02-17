@@ -8,6 +8,8 @@ from keras.models import Model, load_model, Sequential
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
+import tensorflow as tf
+
 # import matplotlib.pyplot as plt
 # plt.figure()
 # plt.plot()
@@ -37,8 +39,9 @@ mean_values = np.mean(data, axis=1, keepdims=1)
 print('Mean values shape:', mean_values.shape)
 data = np.subtract(data, mean_values)
 std_values = np.std(data, axis=1, keepdims=1)
-data = np.expand_dims(np.divide(np.squeeze(data), std_values), axis=-1)
-data = np.squeeze(data)
+data = np.divide(np.squeeze(data), std_values)
+# ADDED FOR CONV
+data = np.expand_dims(data, axis=-1)
 print('Mean value:', np.mean(np.mean(data, axis=1)))
 print('Standard Deviation value:', np.mean(np.std(data, axis=1)))
 
@@ -50,22 +53,32 @@ print('X_dev shape:', X_dev.shape)
 print('X_test shape:', X_test.shape)
 
 # Model Architecture
-input = Input((time_num, channel_num))
-x = Dense(32, activation='relu', input_shape=(time_num, channel_num))(input)
-x = Dense(32, activation='relu')(x)
-x = Dense(64, activation='relu')(x)
-x = Dense(64, activation='relu')(x)
-x = Dense(128, activation='relu')(x)
-x = Dense(64, activation='relu')(x)
-x = Dense(64, activation='relu')(x)
-# x = Dropout(0.4)(x)
-x = Dense(32, activation='relu')(x)
+input = Input((time_num, channel_num, 1))
+x = Conv2D(16, (12, 6), activation='relu', padding='same', input_shape=(time_num, channel_num, 1))(input)
+x = Dropout(0.4)(x)
+x = Conv2D(32, (12, 3), activation='relu', padding='same')(x)
+x = Dropout(0.4)(x)
+x = Conv2D(32, (12, 3), activation='relu', padding='same')(x)
+x = Dropout(0.4)(x)
+x = Conv2D(16, (12, 6), activation='relu', padding='same')(x)
+
+
+# input = Input((time_num, channel_num))
+# x = Dense(32, activation='relu', input_shape=(time_num, channel_num))(input)
+# x = Dense(32, activation='relu')(x)
+# x = Conv2D(64, (3, 3), activation='relu', padding='same')(x)
+# x = Dense(64, activation='relu')(x)
+# x = Dense(64, activation='relu')(x)
+# x = Dense(128, activation='relu')(x)
+# x = Dense(64, activation='relu')(x)
+# x = Dense(64, activation='relu')(x)
+# x = Dense(32, activation='relu')(x)
 x = Flatten()(x)
 output = Dense(13, activation='softmax')(x)
 model = Model(inputs=[input], outputs=[output])
 model.summary()
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-early_stopper = EarlyStopping(patience=6, verbose=1)
+early_stopper = EarlyStopping(patience=3, verbose=1)
 check_pointer = ModelCheckpoint(filepath='net_six_channels.hdf5', verbose=1, save_best_only=True)
 model.fit(X_train, Y_train, batch_size=32, epochs=100, shuffle='true',
           callbacks=[early_stopper, check_pointer], validation_data=(X_dev, Y_dev))
