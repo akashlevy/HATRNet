@@ -6,9 +6,13 @@ from keras.layers.merge import concatenate
 from keras.layers.core import Reshape
 from keras.models import Model, load_model, Sequential
 from keras.callbacks import EarlyStopping, ModelCheckpoint
-from keras.utils import to_categorical
+from keras.utils import to_categorical, plot_model
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
+
+import pydot
+from IPython.display import SVG
+from keras.utils.vis_utils import model_to_dot
 
 # import matplotlib.pyplot as plt
 # plt.figure()
@@ -54,13 +58,13 @@ print('X_test shape:', X_test.shape)
 
 # Model Architecture
 input = Input((time_num, channel_num, 1))
-x = Conv2D(16, (12, 6), activation='relu', padding='same', input_shape=(time_num, channel_num, 1))(input)
+x = Conv2D(16, (12, 3), activation='relu', padding='same', input_shape=(time_num, channel_num, 1))(input)
 x = Dropout(0.4)(x)
 x = Conv2D(32, (12, 3), activation='relu', padding='same')(x)
 x = Dropout(0.4)(x)
 x = Conv2D(32, (12, 3), activation='relu', padding='same')(x)
 x = Dropout(0.4)(x)
-x = Conv2D(16, (12, 6), activation='relu', padding='same')(x)
+x = Conv2D(16, (12, 3), activation='relu', padding='same')(x)
 
 
 # input = Input((time_num, channel_num))
@@ -78,10 +82,13 @@ output = Dense(13, activation='softmax')(x)
 model = Model(inputs=[input], outputs=[output])
 model.summary()
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-early_stopper = EarlyStopping(patience=3, verbose=1)
+early_stopper = EarlyStopping(patience=1, verbose=1)
 check_pointer = ModelCheckpoint(filepath='net_six_channels.hdf5', verbose=1, save_best_only=True)
 model.fit(X_train, Y_train, batch_size=32, epochs=100, shuffle='true',
           callbacks=[early_stopper, check_pointer], validation_data=(X_dev, Y_dev))
+
+plot_model(model, to_file='net_six_channels.png', show_shapes=True)
+# SVG(model_to_dot(model).create(prog='dot', format='svg'))
 
 # Loads best loss epoch model
 loaded_model = load_model('net_six_channels.hdf5')
