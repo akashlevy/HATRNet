@@ -16,15 +16,8 @@ data = sio.loadmat('OurData/data1.mat')
 data = data['data1']
 labels = sio.loadmat('OurData/y.mat')
 labels = labels['y']
-
-print('Data shape:', data.shape)
-print('Labels shape:', labels.shape)
-
 labels = to_categorical(labels)
-measurement_num = len(labels)
-time_num = len(data[0, :, 0])
-channel_num = len(data[0, 0, :])
-
+measurement_num, time_num, channel_num = data.shape
 print('Data shape:', data.shape)
 print('Labels shape:', labels.shape)
 print('Measurement number:', measurement_num)
@@ -33,18 +26,14 @@ print('Channel number:', channel_num)
 
 # Standardizes the data
 mean_values = np.mean(data, axis=1, keepdims=1)
-print('Mean values shape:', mean_values.shape)
 data = np.subtract(data, mean_values)
 std_values = np.std(data, axis=1, keepdims=1)
 data = np.divide(np.squeeze(data), std_values)
-# ADDED FOR CONV
-data = np.expand_dims(data, axis=-1)
-print('Mean value:', np.mean(np.mean(data, axis=1)))
-print('Standard Deviation value:', np.mean(np.std(data, axis=1)))
+data = np.expand_dims(data, axis=-1)  # ADDED FOR CONV
 
-# Splits the data
+# Splits the data into train, dev, test sets
 X_train, X_test, Y_train, Y_test = train_test_split(data, labels, test_size=0.15, random_state=1)
-X_train, X_dev, Y_train, Y_dev = train_test_split(X_train, Y_train, test_size=0.15, random_state=1)
+X_train, X_dev, Y_train, Y_dev = train_test_split(X_train, Y_train, test_size=0.40, random_state=1)
 print('X_train shape:', X_train.shape)
 print('X_dev shape:', X_dev.shape)
 print('X_test shape:', X_test.shape)
@@ -60,6 +49,7 @@ x = Dropout(0.4)(x)
 x = Conv2D(16, (12, 3), activation='relu', padding='same')(x)
 x = Flatten()(x)
 output = Dense(13, activation='softmax')(x)
+
 model = Model(inputs=[input], outputs=[output])
 model.summary()
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
@@ -68,13 +58,10 @@ check_pointer = ModelCheckpoint(filepath='net_six_channels.hdf5', verbose=1, sav
 model.fit(X_train, Y_train, batch_size=32, epochs=100, shuffle='true',
           callbacks=[early_stopper, check_pointer], validation_data=(X_dev, Y_dev))
 plot_model(model, to_file='net_six_channels.png', show_shapes=True)
-# Loads best loss epoch model
-loaded_model = load_model('net_six_channels.hdf5')
-# Evaluates the loaded model
-evaluation = loaded_model.evaluate(X_test, Y_test, verbose=0)
-print('Evaluation Metrics:', loaded_model.metrics_names[0], evaluation[0], loaded_model.metrics_names[1], evaluation[1])
-# Makes the predictions from the loaded model
-predictions = loaded_model.predict(X_test)
+loaded_model = load_model('net_six_channels.hdf5')  # Loads best loss epoch model
+evaluation = loaded_model.evaluate(X_test, Y_test, verbose=0)  # Evaluates the loaded model
+print('Evaluation Metrics:', loaded_model.metrics_names[0], evaluation[0], loaded_model.metrics_names[1], evaluation[1])  # test loss and accuracy
+predictions = loaded_model.predict(X_test)  # Makes the predictions from the loaded model
 
 
 # # Dense model:
