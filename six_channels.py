@@ -17,12 +17,11 @@ data = data['data1']
 labels = sio.loadmat('OurData/y.mat')
 labels = labels['y']
 labels = to_categorical(labels)
-measurement_num, time_num, channel_num = data.shape
 print('Data shape:', data.shape)
 print('Labels shape:', labels.shape)
-print('Measurement number:', measurement_num)
-print('Time number:', time_num)
-print('Channel number:', channel_num)
+print('Measurement number:', data.shape[0])
+print('Time number:', data.shape[1])
+print('Channel number:', data.shape[2])
 
 # Standardizes the data
 mean_values = np.mean(data, axis=1, keepdims=1)
@@ -39,8 +38,8 @@ print('X_dev shape:', X_dev.shape)
 print('X_test shape:', X_test.shape)
 
 # Model Architecture
-input = Input((time_num, channel_num, 1))
-x = Conv2D(16, (12, 3), activation='relu', padding='same', input_shape=(time_num, channel_num, 1))(input)
+input = Input(X_train.shape[1], X_train.shape[2], 1)
+x = Conv2D(16, (12, 3), activation='relu', padding='same', input_shape=(X_train.shape[1], X_train.shape[2], 1))(input)
 x = Dropout(0.4)(x)
 x = Conv2D(32, (12, 3), activation='relu', padding='same')(x)
 x = Dropout(0.4)(x)
