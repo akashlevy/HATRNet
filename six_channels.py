@@ -1,5 +1,7 @@
 import numpy as np
 import scipy.io as sio
+import tensorflow as tf
+import pydot
 from keras.layers import Dense, Dropout, Conv2D, Flatten, Input
 from keras.layers import Conv1D, MaxPooling1D, GlobalAveragePooling2D
 from keras.layers.merge import concatenate
@@ -8,16 +10,7 @@ from keras.models import Model, load_model, Sequential
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.utils import to_categorical, plot_model
 from sklearn.model_selection import train_test_split
-import tensorflow as tf
 
-import pydot
-from IPython.display import SVG
-from keras.utils.vis_utils import model_to_dot
-
-# import matplotlib.pyplot as plt
-# plt.figure()
-# plt.plot()
-# plt.show()
 
 data = sio.loadmat('OurData/data1.mat')
 data = data['data1']
@@ -65,8 +58,26 @@ x = Dropout(0.4)(x)
 x = Conv2D(32, (12, 3), activation='relu', padding='same')(x)
 x = Dropout(0.4)(x)
 x = Conv2D(16, (12, 3), activation='relu', padding='same')(x)
+x = Flatten()(x)
+output = Dense(13, activation='softmax')(x)
+model = Model(inputs=[input], outputs=[output])
+model.summary()
+model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+early_stopper = EarlyStopping(patience=1, verbose=1)
+check_pointer = ModelCheckpoint(filepath='net_six_channels.hdf5', verbose=1, save_best_only=True)
+model.fit(X_train, Y_train, batch_size=32, epochs=100, shuffle='true',
+          callbacks=[early_stopper, check_pointer], validation_data=(X_dev, Y_dev))
+plot_model(model, to_file='net_six_channels.png', show_shapes=True)
+# Loads best loss epoch model
+loaded_model = load_model('net_six_channels.hdf5')
+# Evaluates the loaded model
+evaluation = loaded_model.evaluate(X_test, Y_test, verbose=0)
+print('Evaluation Metrics:', loaded_model.metrics_names[0], evaluation[0], loaded_model.metrics_names[1], evaluation[1])
+# Makes the predictions from the loaded model
+predictions = loaded_model.predict(X_test)
 
 
+# # Dense model:
 # input = Input((time_num, channel_num))
 # x = Dense(32, activation='relu', input_shape=(time_num, channel_num))(input)
 # x = Dense(32, activation='relu')(x)
@@ -77,42 +88,7 @@ x = Conv2D(16, (12, 3), activation='relu', padding='same')(x)
 # x = Dense(64, activation='relu')(x)
 # x = Dense(64, activation='relu')(x)
 # x = Dense(32, activation='relu')(x)
-x = Flatten()(x)
-output = Dense(13, activation='softmax')(x)
-model = Model(inputs=[input], outputs=[output])
-model.summary()
-model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-early_stopper = EarlyStopping(patience=1, verbose=1)
-check_pointer = ModelCheckpoint(filepath='net_six_channels.hdf5', verbose=1, save_best_only=True)
-model.fit(X_train, Y_train, batch_size=32, epochs=100, shuffle='true',
-          callbacks=[early_stopper, check_pointer], validation_data=(X_dev, Y_dev))
-
-plot_model(model, to_file='net_six_channels.png', show_shapes=True)
-# SVG(model_to_dot(model).create(prog='dot', format='svg'))
-
-# Loads best loss epoch model
-loaded_model = load_model('net_six_channels.hdf5')
-# Evaluates the loaded model
-evaluation = loaded_model.evaluate(X_test, Y_test, verbose=0)
-print('Evaluation Metrics:', loaded_model.metrics_names[0], evaluation[0], loaded_model.metrics_names[1], evaluation[1])
-# Makes the predictions from the loaded model
-predictions = loaded_model.predict(X_test)
-
-
-
-
-# model = Sequential()
-# model.add(Conv1D(filters=150, kernel_size=15, activation='relu', input_shape=(time_num, channel_num)))
-# model.add(MaxPooling1D(pool_size=2))
-# model.add(Dropout(0.4))
-# model.add(Conv1D(filters=150, kernel_size=15, activation='relu'))
-# model.add(MaxPooling1D(pool_size=2))
-# model.add(Dropout(0.4))
-# layer2_output_shape = model.output_shape
-# model.add(Reshape((layer2_output_shape[1], layer2_output_shape[2], -1)))
-# model.add(Conv2D(filters=150, kernel_size=(3, 15), strides=(3, 1), activation='relu'))
-# model.add(GlobalAveragePooling2D())
-# model.add(Dropout(0.4))
-# model.add(Dense(units=13, activation='softmax'))
+# x = Flatten()(x)
+# output = Dense(13, activation='softmax')(x)
 
 

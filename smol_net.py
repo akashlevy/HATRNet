@@ -1,24 +1,15 @@
 import numpy as np
 import scipy.io as sio
+import pydot
 from keras.layers import Dense, Dropout, Conv2D, Flatten, Input
 from keras.layers.merge import concatenate
 from keras.models import Model, load_model
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.utils import to_categorical
-import pydot
-from IPython.display import SVG
-from keras.utils.vis_utils import model_to_dot
 from keras.utils import plot_model
-
-# import matplotlib
-# matplotlib.use('PS')
-# import matplotlib.pyplot as plt
-# plt.figure()
-# plt.plot(t, X_train[4, :])
-# plt.show()
+from sklearn.model_selection import train_test_split
 
 X_train = np.loadtxt('HAPT Data Set/Train/X_train.txt')
-print('DataX_train shape: ' + str(X_train.shape))
 Y_train = np.loadtxt('HAPT Data Set/Train/y_train.txt')
 ID_train = np.loadtxt('HAPT Data Set/Train/subject_id_train.txt')
 X_test = np.loadtxt('HAPT Data Set/Test/X_test.txt')
@@ -36,30 +27,15 @@ print('Subject IDs shape: ' + str(subject_ids.shape))
 
 measurement_num = len(labels)
 time_num = len(data[0, :])
+# Standardizes the data
 mean_values = np.mean(data, axis=1, keepdims=1)
-variance_values = np.var(data, axis=1, keepdims=1)
-
-# # Standardizes the data
+std_values = np.std(data, axis=1, keepdims=1)
 data -= mean_values
-data /= variance_values
-# VARIANCE STANDARDIZATION IS NOT WORKING PROPERLY!!!!
+data /= std_values
 
-# print('Mean Value: ' + str(np.mean(np.mean(data, axis=1))))
-# print('Variance Value: ' + str(np.var(data, axis=1, keepdims=1)))
-
-# Splits the data
-train_split = 0.7
-dev_split = 0.15
-test_split = 0.15
-# Train set
-X_train = data[0:int(np.floor(train_split*measurement_num)), :]
-Y_train = labels[0:int(np.floor(0.7*measurement_num))]
-# Evaluation set
-X_dev = data[int(np.floor(train_split*measurement_num)):int(np.floor((train_split+dev_split)*measurement_num)), :]
-Y_dev = labels[int(np.floor(train_split*measurement_num)):int(np.floor((train_split+dev_split)*measurement_num))]
-# Test set
-X_test = data[int(np.floor((train_split+dev_split)*measurement_num)):, :]
-Y_test = labels[int(np.floor((train_split+dev_split)*measurement_num)):]
+# # Splits the data
+X_train, X_test, Y_train, Y_test = train_test_split(data, labels, test_size=0.15, random_state=1)
+X_train, X_dev, Y_train, Y_dev = train_test_split(X_train, Y_train, test_size=0.15, random_state=1)
 
 # Model Architecture
 input = Input((time_num, 1))
@@ -73,7 +49,6 @@ early_stopper = EarlyStopping(patience=5, verbose=1)
 check_pointer = ModelCheckpoint(filepath='smol_net.hdf5', verbose=1, save_best_only=True)
 model.fit(X_train, Y_train, batch_size=32, epochs=100, shuffle='true',
           callbacks=[early_stopper, check_pointer], validation_data=(X_dev, Y_dev))
-
 plot_model(model, to_file='smol_net.png', show_shapes=True)
 
 # Loads best loss epoch model
