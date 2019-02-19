@@ -12,14 +12,25 @@ from keras.utils import to_categorical, plot_model
 from sklearn.model_selection import train_test_split
 
 
-def load_data():
-    data = sio.loadmat('OurData/data1.mat')
-    data = data['data1']
-    labels = sio.loadmat('OurData/y.mat')
-    labels = labels['y']
-    labels = to_categorical(labels)
-    print('Data shape:', data.shape, 'Labels shape:', labels.shape)
-    print('Measurement number:', data.shape[0], 'Time number:', data.shape[1], 'Channel number:', data.shape[2])
+def load_data(dataset='end_to_end'):
+    if dataset=='end_to_end':
+        data = sio.loadmat('OurData/data1.mat')
+        data = data['data1']
+        labels = sio.loadmat('OurData/y.mat')
+        labels = labels['y']
+        labels = to_categorical(labels)
+        print('Data shape:', data.shape, 'Labels shape:', labels.shape)
+        print('Measurement number:', data.shape[0], 'Time number:', data.shape[1], 'Channel number:', data.shape[2])
+    elif dataset=='feature':
+        X_train = np.loadtxt('HAPT Data Set/Train/X_train.txt')
+        Y_train = np.loadtxt('HAPT Data Set/Train/y_train.txt')
+        X_test = np.loadtxt('HAPT Data Set/Test/X_test.txt')
+        Y_test = np.loadtxt('HAPT Data Set/Test/y_test.txt')
+        data = np.expand_dims(np.concatenate((X_train, X_test), axis=0), axis=-1)
+        labels = np.expand_dims(np.concatenate((Y_train, Y_test), axis=0), axis=-1)
+        labels = to_categorical(labels)
+        print('Data shape:', data.shape, 'Labels shape:', labels.shape)
+        print('Measurement number:', data.shape[0], 'Time number:', data.shape[1])
     return data, labels
 
 
@@ -31,9 +42,9 @@ def standardize(data):
     return data
 
 
-def preprocess_data(expand=True):
+def preprocess_data(dataset='end_to_end', expand=True):
     # Loads, standardizes, and splits the data into train, dev, test sets
-    data, labels = load_data()
+    data, labels = load_data(dataset)
     data = standardize(data)
     if expand==True:
         data = np.expand_dims(data, axis=-1)  # ADDED FOR CONV, not FC
@@ -70,8 +81,13 @@ def model_architecture(X_train, architecture='conv'):
         x = Dense(32, activation='relu')(x)
         x = Flatten()(x)
         output = Dense(13, activation='softmax')(x)
+    elif architecture=='Dense'
+        input = Input((time_num, 1))
+        x = Dense(20, activation='relu')(input)
+        x = Flatten()(x)
+        output = Dense(13, activation='softmax')(x)
     model = Model(inputs=[input], outputs=[output])
-    plot_model(model, to_file='net_six_channels.png', show_shapes=True)
+    plot_model(model, to_file='six_channels.png', show_shapes=True)
     model.summary()
     return model
 
@@ -80,23 +96,24 @@ def train_model(X_train, Y_train, X_dev, Y_dev):
     model = model_architecture(X_train, architecture='conv')
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     early_stopper = EarlyStopping(patience=1, verbose=1)
-    check_pointer = ModelCheckpoint(filepath='net_six_channels.hdf5', verbose=1, save_best_only=True)
+    check_pointer = ModelCheckpoint(filepath='six_channels.hdf5', verbose=1, save_best_only=True)
     model.fit(X_train, Y_train, batch_size=32, epochs=1, shuffle='true',
               callbacks=[early_stopper, check_pointer], validation_data=(X_dev, Y_dev))
 
 
 def evaluate_model(X_test, Y_test):
-    loaded_model = load_model('net_six_channels.hdf5')  # Loads best loss epoch model
+    loaded_model = load_model('six_channels.hdf5')  # Loads best loss epoch model
     evaluation = loaded_model.evaluate(X_test, Y_test, verbose=0)  # Evaluates the loaded model
     print('Evaluation Metrics:', loaded_model.metrics_names[0], evaluation[0], loaded_model.metrics_names[1], evaluation[1])  # test loss and accuracy
     predictions = loaded_model.predict(X_test)  # Makes the predictions from the loaded model
     return predictions
 
 
-def run_experiment(expand=True, architecture='conv'):
+def run_experiment(dataset='end_to_end', expand=True, architecture='conv'):
     X_train, X_dev, X_test, Y_train, Y_dev, Y_test = preprocess_data(expand)
     train_model(X_train, Y_train, X_dev, Y_dev)
     predictions = evaluate_model(X_test, Y_test)
     return predictions
+
 
 predictions = run_experiment()
