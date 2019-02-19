@@ -38,7 +38,9 @@ def standardize(data):
     mean_values = np.mean(data, axis=1, keepdims=1)
     data = np.subtract(data, mean_values)
     std_values = np.std(data, axis=1, keepdims=1)
-    data = np.divide(np.squeeze(data), std_values)
+    data = np.divide(data, std_values)
+    print('Mean value:', np.mean(data))
+    print('STD value:', np.mean(np.std(data)))
     return data
 
 
@@ -48,6 +50,7 @@ def preprocess_data(dataset='end_to_end', expand=True):
     data = standardize(data)
     if expand==True:
         data = np.expand_dims(data, axis=-1)  # ADDED FOR CONV, not FC
+    print('PREPORCESS THIS HAPPENED')
     X_train, X_test, Y_train, Y_test = train_test_split(data, labels, test_size=0.15, random_state=1)
     X_train, X_dev, Y_train, Y_dev = train_test_split(X_train, Y_train, test_size=0.40, random_state=1)
     print('X_train shape:', X_train.shape)
@@ -81,8 +84,8 @@ def model_architecture(X_train, architecture='conv'):
         x = Dense(32, activation='relu')(x)
         x = Flatten()(x)
         output = Dense(13, activation='softmax')(x)
-    elif architecture=='Dense'
-        input = Input((time_num, 1))
+    elif architecture=='feature':
+        input = Input((X_train.shape[1], 1))
         x = Dense(20, activation='relu')(input)
         x = Flatten()(x)
         output = Dense(13, activation='softmax')(x)
@@ -92,8 +95,8 @@ def model_architecture(X_train, architecture='conv'):
     return model
 
 
-def train_model(X_train, Y_train, X_dev, Y_dev):
-    model = model_architecture(X_train, architecture='conv')
+def train_model(X_train, Y_train, X_dev, Y_dev, architecture='conv'):
+    model = model_architecture(X_train, architecture)
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     early_stopper = EarlyStopping(patience=1, verbose=1)
     check_pointer = ModelCheckpoint(filepath='six_channels.hdf5', verbose=1, save_best_only=True)
@@ -110,10 +113,11 @@ def evaluate_model(X_test, Y_test):
 
 
 def run_experiment(dataset='end_to_end', expand=True, architecture='conv'):
-    X_train, X_dev, X_test, Y_train, Y_dev, Y_test = preprocess_data(expand)
-    train_model(X_train, Y_train, X_dev, Y_dev)
+    X_train, X_dev, X_test, Y_train, Y_dev, Y_test = preprocess_data(dataset, expand)
+    train_model(X_train, Y_train, X_dev, Y_dev, architecture)
     predictions = evaluate_model(X_test, Y_test)
     return predictions
 
 
-predictions = run_experiment()
+predictions = run_experiment(dataset='end_to_end', expand=False, architecture='dense')
+# predictions = run_experiment()
