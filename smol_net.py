@@ -39,15 +39,16 @@ X_train, X_dev, Y_train, Y_dev = train_test_split(X_train, Y_train, test_size=0.
 
 # Model Architecture
 input = Input((time_num, 1))
-x = Dense(20, activation='relu', input_shape=(time_num, 1))(input)
+x = Dense(20, activation='relu')(input)
 x = Flatten()(x)
 output = Dense(13, activation='softmax')(x)
 model = Model(inputs=[input], outputs=[output])
+plot_model(model, to_file='smol_net.png', show_shapes=True)
 model.summary()
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-early_stopper = EarlyStopping(patience=5, verbose=1)
+early_stopper = EarlyStopping(patience=1, verbose=1)
 check_pointer = ModelCheckpoint(filepath='smol_net.hdf5', verbose=1, save_best_only=True)
-model.fit(X_train, Y_train, batch_size=32, epochs=100, shuffle='true',
+model.fit(X_train, Y_train, batch_size=32, epochs=10, shuffle='true',
           callbacks=[early_stopper, check_pointer], validation_data=(X_dev, Y_dev))
 plot_model(model, to_file='smol_net.png', show_shapes=True)
 
