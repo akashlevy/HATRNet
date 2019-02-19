@@ -18,9 +18,6 @@ def load_data(dataset='end_to_end'):
         data = data['data1']
         labels = sio.loadmat('OurData/y.mat')
         labels = labels['y']
-        labels = to_categorical(labels)
-        print('Data shape:', data.shape, 'Labels shape:', labels.shape)
-        print('Measurement number:', data.shape[0], 'Time number:', data.shape[1], 'Channel number:', data.shape[2])
     elif dataset=='feature':
         X_train = np.loadtxt('HAPT Data Set/Train/X_train.txt')
         Y_train = np.loadtxt('HAPT Data Set/Train/y_train.txt')
@@ -28,9 +25,9 @@ def load_data(dataset='end_to_end'):
         Y_test = np.loadtxt('HAPT Data Set/Test/y_test.txt')
         data = np.expand_dims(np.concatenate((X_train, X_test), axis=0), axis=-1)
         labels = np.expand_dims(np.concatenate((Y_train, Y_test), axis=0), axis=-1)
-        labels = to_categorical(labels)
-        print('Data shape:', data.shape, 'Labels shape:', labels.shape)
-        print('Measurement number:', data.shape[0], 'Time number:', data.shape[1])
+    labels = to_categorical(labels)
+    print('Data shape:', data.shape, 'Labels shape:', labels.shape)
+    print('Measurement number:', data.shape[0], 'Time number:', data.shape[1], 'Channel number:', data.shape[2])
     return data, labels
 
 
@@ -119,5 +116,5 @@ def run_experiment(dataset='end_to_end', expand=True, architecture='conv'):
     return predictions
 
 
-predictions = run_experiment(dataset='end_to_end', expand=False, architecture='dense')
+predictions = run_experiment(dataset='feature', expand=False, architecture='feature')
 # predictions = run_experiment()
