@@ -1,7 +1,6 @@
 import numpy as np
 import scipy.io as sio
 import tensorflow as tf
-import pydot
 import os
 from keras.layers import Dense, Dropout, Conv2D, Flatten, Input
 from keras.layers import Conv1D, MaxPooling1D, GlobalAveragePooling2D
