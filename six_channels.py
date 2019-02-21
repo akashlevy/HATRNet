@@ -16,6 +16,7 @@ def load_data(dataset='end_to_end'):
     if dataset=='end_to_end':
         data = sio.loadmat('OurData/data1.mat')
         data = data['data1']
+        data = np.expand_dims(data, axis=-1)
         labels = sio.loadmat('OurData/y.mat')
         labels = labels['y']
     elif dataset=='feature':
@@ -41,13 +42,10 @@ def standardize(data):
     return data
 
 
-def preprocess_data(dataset='end_to_end', expand=True):
+def preprocess_data(dataset='end_to_end'):
     # Loads, standardizes, and splits the data into train, dev, test sets
     data, labels = load_data(dataset)
     data = standardize(data)
-    if expand==True:
-        data = np.expand_dims(data, axis=-1)  # ADDED FOR CONV, not FC
-    print('PREPORCESS THIS HAPPENED')
     X_train, X_test, Y_train, Y_test = train_test_split(data, labels, test_size=0.15, random_state=1)
     X_train, X_dev, Y_train, Y_dev = train_test_split(X_train, Y_train, test_size=0.40, random_state=1)
     print('X_train shape:', X_train.shape)
@@ -58,8 +56,7 @@ def preprocess_data(dataset='end_to_end', expand=True):
 
 def model_architecture(X_train, architecture='conv'):
     if architecture=='conv':
-        print('THIS HAPPENED')
-        input = Input((X_train.shape[1], X_train.shape[2], 1))
+        input = Input((X_train.shape[1], X_train.shape[2], X_train.shape[3]))
         x = Conv2D(16, (12, 3), activation='relu', padding='same')(input)
         x = Dropout(0.4)(x)
         x = Conv2D(32, (12, 3), activation='relu', padding='same')(x)
@@ -82,7 +79,7 @@ def model_architecture(X_train, architecture='conv'):
         x = Flatten()(x)
         output = Dense(13, activation='softmax')(x)
     elif architecture=='feature':
-        input = Input((X_train.shape[1], 1))
+        input = Input((X_train.shape[1], X_train.shape[2]))
         x = Dense(20, activation='relu')(input)
         x = Flatten()(x)
         output = Dense(13, activation='softmax')(x)
@@ -109,12 +106,17 @@ def evaluate_model(X_test, Y_test):
     return predictions
 
 
-def run_experiment(dataset='end_to_end', expand=True, architecture='conv'):
-    X_train, X_dev, X_test, Y_train, Y_dev, Y_test = preprocess_data(dataset, expand)
+def run_experiment(dataset='end_to_end', architecture='conv'):
+    X_train, X_dev, X_test, Y_train, Y_dev, Y_test = preprocess_data(dataset)
     train_model(X_train, Y_train, X_dev, Y_dev, architecture)
     predictions = evaluate_model(X_test, Y_test)
     return predictions
 
+###################
+# Dataset = feature
+#     architecture = feature, dense
+# Dataset = end_to_end
+#     architecture = conv
 
-predictions = run_experiment(dataset='feature', expand=False, architecture='feature')
+predictions = run_experiment(dataset='end_to_end', architecture='conv')
 # predictions = run_experiment()
