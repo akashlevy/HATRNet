@@ -112,11 +112,12 @@ def run_experiment(dataset='end_to_end', architecture='conv'):
     predictions = evaluate_model(X_test, Y_test)
     return predictions
 
-###################
-# Dataset = feature
-#     architecture = feature, dense
-# Dataset = end_to_end
-#     architecture = conv
+
+######################################
+# Dataset = feature                  #
+#     architecture = feature, dense  #
+# Dataset = end_to_end               #
+#     architecture = conv            #
+######################################
 
 predictions = run_experiment(dataset='end_to_end', architecture='conv')
-# predictions = run_experiment()
