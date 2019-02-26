@@ -13,10 +13,18 @@ for i=1:length(labels)
     data_start = labels(i,4);
     data_end = labels(i,5);
     
-    data_fft(i,:,1) = fft_freq(acc(data_start:data_end,1), Fs, 2000);
-    data_fft(i,:,2) = fft_freq(acc(data_start:data_end,2), Fs, 2000);
-    data_fft(i,:,3) = fft_freq(acc(data_start:data_end,3), Fs, 2000);
-    data_fft(i,:,4) = fft_freq(gyro(data_start:data_end,1), Fs, 2000);
-    data_fft(i,:,5) = fft_freq(gyro(data_start:data_end,2), Fs, 2000);
-    data_fft(i,:,6) = fft_freq(gyro(data_start:data_end,3), Fs, 2000);    
+    % Remove mean, normalize variance
+    acc_data = acc(data_start:data_end,:);
+    acc_data = acc_data - mean(acc_data);
+    acc_data = acc_data ./ std(acc_data);
+    gyro_data = gyro(data_start:data_end,:);
+    gyro_data = gyro_data - mean(gyro_data);
+    gyro_data = gyro_data ./ std(gyro_data);
+    
+    [~,data_fft(i,:,1)] = fft_freq(acc_data(:,1), Fs, 2000);
+    [~,data_fft(i,:,2)] = fft_freq(acc_data(:,2), Fs, 2000);
+    [~,data_fft(i,:,3)] = fft_freq(acc_data(:,3), Fs, 2000);
+    [~,data_fft(i,:,4)] = fft_freq(gyro_data(:,1), Fs, 2000);
+    [~,data_fft(i,:,5)] = fft_freq(gyro_data(:,2), Fs, 2000);
+    [~,data_fft(i,:,6)] = fft_freq(gyro_data(:,3), Fs, 2000);    
 end
