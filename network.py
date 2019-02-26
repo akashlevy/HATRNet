@@ -2,6 +2,8 @@ import numpy as np
 import scipy.io as sio
 import tensorflow as tf
 import os
+import matplotlib.pyplot as plt
+import itertools
 from keras.layers import Dense, Dropout, Conv2D, Flatten, Input
 from keras.layers import Conv1D, MaxPooling1D, GlobalAveragePooling2D
 from keras.layers.merge import concatenate
@@ -10,12 +12,19 @@ from keras.models import Model, load_model, Sequential
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.utils import to_categorical, plot_model
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
 
 
 def load_data(dataset):
     if dataset=='end_to_end':
         data = sio.loadmat('data/data1.mat')
         data = data['data1']
+        data = np.expand_dims(data, axis=-1)
+        labels = sio.loadmat('data/y.mat')
+        labels = labels['y']
+    elif dataset=='frequency':
+        data = sio.loadmat('data/data_fft.mat')
+        data = data['data_fft']
         data = np.expand_dims(data, axis=-1)
         labels = sio.loadmat('data/y.mat')
         labels = labels['y']
@@ -94,7 +103,7 @@ def train_model(X_train, Y_train, X_dev, Y_dev, architecture):
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     early_stopper = EarlyStopping(patience=1, verbose=1)
     check_pointer = ModelCheckpoint(filepath='Trained_Networks/network.hdf5', verbose=1, save_best_only=True)
-    model.fit(X_train, Y_train, batch_size=32, epochs=1, shuffle='true',
+    model.fit(X_train, Y_train, batch_size=32, epochs=10, shuffle='true',
               callbacks=[early_stopper, check_pointer], validation_data=(X_dev, Y_dev))
 
 
@@ -106,12 +115,27 @@ def evaluate_experiment(X_test, Y_test, architecture):
     predictions = loaded_model.predict(X_test)  # Makes the predictions from the loaded model
     return predictions
 
+def plot_confusion_matrix(Y_true, Y_pred):
+    matrix = confusion_matrix(Y_true.argmax(axis=1), Y_pred.argmax(axis=1))
+    plt.figure()
+    plt.imshow(matrix, interpolation='nearest')
+    plt.colorbar()
+    fmt = 'd'
+    thresh = matrix.max() / 2.
+    for i, j in itertools.product(range(matrix.shape[0]), range(matrix.shape[1])):
+        plt.text(j, i, format(matrix[i, j], fmt), horizontalalignment="center", color="white")
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    plt.tight_layout()
+    plt.show()
 
 def run_experiment(dataset='end_to_end', architecture='conv'):
     X_train, X_dev, X_test, Y_train, Y_dev, Y_test = preprocess_data(dataset)
     train_model(X_train, Y_train, X_dev, Y_dev, architecture)
     predictions = evaluate_experiment(X_test, Y_test, architecture)
+    plot_confusion_matrix(Y_test,predictions)
     return predictions
+
 
 
 ######################################
@@ -119,6 +143,8 @@ def run_experiment(dataset='end_to_end', architecture='conv'):
 #     architecture = small, dense    #
 # Dataset = end_to_end               #
 #     architecture = conv            #
+# Dataset = frequency                #
+#     architecture = conv            #
 ######################################
 
-predictions = run_experiment(dataset='feature', architecture='small')
+predictions = run_experiment(dataset='frequency', architecture='conv')
