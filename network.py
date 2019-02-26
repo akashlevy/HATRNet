@@ -97,6 +97,21 @@ def model_architecture(X_train, architecture):
         x = Dropout(0.4)(x)
         x = Flatten()(x)
         output = Dense(units=13, activation='softmax')(x)
+    elif architecture=='perceptnet':
+        input = Input((X_train.shape[1], X_train.shape[2], X_train.shape[3]))
+        x = Conv2D(filters=16, kernel_size=(10,1), activation='relu', padding='same')(input)
+        x = MaxPooling2D(pool_size=(2,1))(x)
+        x = Dropout(0.4)(x)
+        x = Conv2D(filters=32, kernel_size=(10,1), activation='relu', padding='same')(x)
+        x = MaxPooling2D(pool_size=(2,1))(x)
+        x = Dropout(0.4)(x)
+        x = Conv2D(filters=64, kernel_size=(10,1), activation='relu', padding='same')(x)
+        x = MaxPooling2D(pool_size=(2,1))(x)
+        x = Dropout(0.4)(x)
+        x = Conv2D(filters=32, kernel_size=(10,3), strides=(1,3),  activation = 'relu', padding='same')(x)
+        x = GlobalAveragePooling2D()(x)
+        x = Dropout(0.4)(x)
+        output = Dense(units=13, activation='softmax')(x) 
     elif architecture=='dense':
         input = Input((X_train.shape[1], X_train.shape[2]))
         x = Dense(32, activation='relu')(input)
@@ -125,7 +140,7 @@ def train_model(X_train, Y_train, X_dev, Y_dev, architecture):
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     early_stopper = EarlyStopping(patience=3, verbose=1)
     check_pointer = ModelCheckpoint(filepath='Trained_Networks/network.hdf5', verbose=1, save_best_only=True)
-    model.fit(X_train, Y_train, batch_size=32, epochs=10, shuffle='true',
+    model.fit(X_train, Y_train, batch_size=32, epochs=100, shuffle='true',
               callbacks=[early_stopper, check_pointer], validation_data=(X_dev, Y_dev))
 
 
@@ -169,4 +184,4 @@ def run_experiment(dataset='end_to_end', architecture='conv'):
 #     architecture = conv            #
 ######################################
 
-predictions = run_experiment(dataset='frequency', architecture='conv')
+predictions = run_experiment(dataset='frequency', architecture='perceptnet')
