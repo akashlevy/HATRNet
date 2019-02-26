@@ -5,12 +5,13 @@ import os
 import matplotlib.pyplot as plt
 import itertools
 from keras.layers import Dense, Dropout, Conv2D, Flatten, Input
-from keras.layers import Conv1D, MaxPooling1D, GlobalAveragePooling2D
+from keras.layers import Conv1D, MaxPooling1D, MaxPooling2D, GlobalAveragePooling2D
 from keras.layers.merge import concatenate
 from keras.layers.core import Reshape
 from keras.models import Model, load_model, Sequential
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.utils import to_categorical, plot_model
+from keras import backend
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 
@@ -67,14 +68,35 @@ def model_architecture(X_train, architecture):
     if architecture=='conv':
         input = Input((X_train.shape[1], X_train.shape[2], X_train.shape[3]))
         x = Conv2D(16, (12, 3), activation='relu', padding='same')(input)
+        x = MaxPooling2D(pool_size=(2,1))(x)
         x = Dropout(0.4)(x)
         x = Conv2D(32, (12, 3), activation='relu', padding='same')(x)
+        x = MaxPooling2D(pool_size=(2,1))(x)
+        x = Dropout(0.4)(x)
+        x = Conv2D(64, (12, 3), activation='relu', padding='same')(x)
+        x = MaxPooling2D(pool_size=(2,1))(x)
         x = Dropout(0.4)(x)
         x = Conv2D(32, (12, 3), activation='relu', padding='same')(x)
+        x = MaxPooling2D(pool_size=(2,1))(x)
         x = Dropout(0.4)(x)
         x = Conv2D(16, (12, 3), activation='relu', padding='same')(x)
         x = Flatten()(x)
+        x = Dense(500, activation='relu')(x)
         output = Dense(13, activation='softmax')(x)
+    elif architecture=='late_fusion':
+        input = Input((X_train.shape[1], X_train.shape[2]))
+        x = Conv1D(filters=16, kernel_size=15, activation='relu', padding='same')(input)
+        x = MaxPooling1D(pool_size=2)(x)
+        x = Dropout(0.4)(x)
+        x = Conv1D(filters=32, kernel_size=15, activation='relu', padding='same')(x)
+        x = MaxPooling1D(pool_size=2)(x)
+        x = Dropout(0.4)(x)
+        x = backend.expand_dims(x,axis=-1)
+        x = Conv2D(filters=32, kernel_size=(15,3), strides=(1,3),  activation = 'relu', padding='same')(x)
+        #x = GlobalAveragePooling2D()(x)
+        x = Dropout(0.4)(x)
+        x = Flatten()(x)
+        output = Dense(units=13, activation='softmax')(x)
     elif architecture=='dense':
         input = Input((X_train.shape[1], X_train.shape[2]))
         x = Dense(32, activation='relu')(input)
@@ -88,7 +110,7 @@ def model_architecture(X_train, architecture):
         x = Flatten()(x)
         output = Dense(13, activation='softmax')(x)
     elif architecture=='small':
-        input = Input((X_train.shape[1], X_train.shape[2]))
+        input = Input((X_train.shape[2], X_train.shape[3]))
         x = Dense(20, activation='relu')(input)
         x = Flatten()(x)
         output = Dense(13, activation='softmax')(x)
@@ -101,7 +123,7 @@ def model_architecture(X_train, architecture):
 def train_model(X_train, Y_train, X_dev, Y_dev, architecture):
     model = model_architecture(X_train, architecture)
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-    early_stopper = EarlyStopping(patience=1, verbose=1)
+    early_stopper = EarlyStopping(patience=3, verbose=1)
     check_pointer = ModelCheckpoint(filepath='Trained_Networks/network.hdf5', verbose=1, save_best_only=True)
     model.fit(X_train, Y_train, batch_size=32, epochs=10, shuffle='true',
               callbacks=[early_stopper, check_pointer], validation_data=(X_dev, Y_dev))
