@@ -1,9 +1,9 @@
 clear all;
 close all;
 
-load('data1.mat'); data=data1;
-load('y.mat')
-load('length.mat');
+load('data/data1.mat'); data=data1;
+load('data/y.mat')
+load('data/length.mat'); len=length; clear length;
 Fs = 50;
 T = 1/Fs;
 
