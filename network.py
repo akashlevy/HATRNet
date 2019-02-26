@@ -14,16 +14,16 @@ from sklearn.model_selection import train_test_split
 
 def load_data(dataset):
     if dataset=='end_to_end':
-        data = sio.loadmat('Data/data1.mat')
+        data = sio.loadmat('data/data1.mat')
         data = data['data1']
         data = np.expand_dims(data, axis=-1)
-        labels = sio.loadmat('Data/y.mat')
+        labels = sio.loadmat('data/y.mat')
         labels = labels['y']
     elif dataset=='feature':
-        X_train = np.loadtxt('Data/HAPT Data Set/Train/X_train.txt')
-        Y_train = np.loadtxt('Data/HAPT Data Set/Train/y_train.txt')
-        X_test = np.loadtxt('Data/HAPT Data Set/Test/X_test.txt')
-        Y_test = np.loadtxt('Data/HAPT Data Set/Test/y_test.txt')
+        X_train = np.loadtxt('data/HAPT_dataset/Train/X_train.txt')
+        Y_train = np.loadtxt('data/HAPT_dataset/Train/y_train.txt')
+        X_test = np.loadtxt('data/HAPT_dataset/Test/X_test.txt')
+        Y_test = np.loadtxt('data/HAPT_dataset/Test/y_test.txt')
         data = np.expand_dims(np.concatenate((X_train, X_test), axis=0), axis=-1)
         labels = np.expand_dims(np.concatenate((Y_train, Y_test), axis=0), axis=-1)
     labels = to_categorical(labels)
