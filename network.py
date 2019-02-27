@@ -11,7 +11,7 @@ from keras.layers.core import Reshape
 from keras.models import Model, load_model, Sequential
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.utils import to_categorical, plot_model
-from keras import backend
+from keras import backend as K
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 
@@ -84,18 +84,20 @@ def model_architecture(X_train, architecture):
         x = Dense(500, activation='relu')(x)
         output = Dense(13, activation='softmax')(x)
     elif architecture=='late_fusion':
-        input = Input((X_train.shape[1], X_train.shape[2]))
-        x = Conv1D(filters=16, kernel_size=15, activation='relu', padding='same')(input)
+        input = Input((X_train.shape[1], X_train.shape[2], X_train.shape[3]))
+        x = Lambda(lambda x: K.squeeze(x, axis=-1))(input)
+        x = Conv1D(filters=16, kernel_size=15, activation='relu', padding='same')(x)
         x = MaxPooling1D(pool_size=2)(x)
         x = Dropout(0.4)(x)
         x = Conv1D(filters=32, kernel_size=15, activation='relu', padding='same')(x)
         x = MaxPooling1D(pool_size=2)(x)
         x = Dropout(0.4)(x)
-        x = backend.expand_dims(x,axis=-1)
+        x = Lambda(lambda x: K.expand_dims(x,axis=-1))(x)
         x = Conv2D(filters=32, kernel_size=(15,3), strides=(1,3),  activation = 'relu', padding='same')(x)
-        #x = GlobalAveragePooling2D()(x)
+        x = GlobalAveragePooling2D()(x)
         x = Dropout(0.4)(x)
-        x = Flatten()(x)
+        # x = Flatten()(x)
+        output = Dense(units=13, activation='softmax')(x)
         output = Dense(units=13, activation='softmax')(x)
     elif architecture=='perceptnet':
         input = Input((X_train.shape[1], X_train.shape[2], X_train.shape[3]))
