@@ -4,7 +4,7 @@ import tensorflow as tf
 import os
 import matplotlib.pyplot as plt
 import itertools
-from keras.layers import Dense, Dropout, Conv2D, Flatten, Input
+from keras.layers import Dense, Dropout, Conv2D, Flatten, Input, BatchNormalization, Lambda
 from keras.layers import Conv1D, MaxPooling1D, MaxPooling2D, GlobalAveragePooling2D
 from keras.layers.merge import concatenate
 from keras.layers.core import Reshape
@@ -14,6 +14,10 @@ from keras.utils import to_categorical, plot_model
 from keras import backend as K
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
+
+#config = tf.ConfigProto( device_count = {'GPU': 1 , 'CPU': 1} ) 
+#sess = tf.Session(config=config) 
+#keras.backend.set_session(sess)
 
 
 def load_data(dataset):
@@ -86,10 +90,10 @@ def model_architecture(X_train, architecture):
     elif architecture=='late_fusion':
         input = Input((X_train.shape[1], X_train.shape[2], X_train.shape[3]))
         x = Lambda(lambda x: K.squeeze(x, axis=-1))(input)
-        x = Conv1D(filters=16, kernel_size=15, activation='relu', padding='same')(x)
+        x = Conv1D(filters=32, kernel_size=20, activation='relu', padding='same', data_format='channels_first')(x)
         x = MaxPooling1D(pool_size=2)(x)
         x = Dropout(0.4)(x)
-        x = Conv1D(filters=32, kernel_size=15, activation='relu', padding='same')(x)
+        x = Conv1D(filters=128, kernel_size=20, activation='relu', padding='same', data_format='channels_first')(x)
         x = MaxPooling1D(pool_size=2)(x)
         x = Dropout(0.4)(x)
         x = Lambda(lambda x: K.expand_dims(x,axis=-1))(x)
@@ -98,33 +102,48 @@ def model_architecture(X_train, architecture):
         x = Dropout(0.4)(x)
         # x = Flatten()(x)
         output = Dense(units=13, activation='softmax')(x)
-        output = Dense(units=13, activation='softmax')(x)
     elif architecture=='perceptnet':
         input = Input((X_train.shape[1], X_train.shape[2], X_train.shape[3]))
-        x = Conv2D(filters=16, kernel_size=(10,1), activation='relu', padding='same')(input)
-        x = MaxPooling2D(pool_size=(2,1))(x)
-        x = Dropout(0.4)(x)
-        x = Conv2D(filters=32, kernel_size=(10,1), activation='relu', padding='same')(x)
+        x = Conv2D(filters=32, kernel_size=(10,1), activation='relu', padding='same')(input)
+        x = BatchNormalization()(x)
         x = MaxPooling2D(pool_size=(2,1))(x)
         x = Dropout(0.4)(x)
         x = Conv2D(filters=64, kernel_size=(10,1), activation='relu', padding='same')(x)
+        x = BatchNormalization()(x)
         x = MaxPooling2D(pool_size=(2,1))(x)
         x = Dropout(0.4)(x)
-        x = Conv2D(filters=32, kernel_size=(10,3), strides=(1,3),  activation = 'relu', padding='same')(x)
+        x = Conv2D(filters=128, kernel_size=(10,1), activation='relu', padding='same')(x)
+        x = BatchNormalization()(x)
+        x = MaxPooling2D(pool_size=(2,1))(x)
+        x = Dropout(0.4)(x)
+        x = Conv2D(filters=256, kernel_size=(10,1), activation='relu', padding='same')(x)
+        x = BatchNormalization()(x)
+        x = MaxPooling2D(pool_size=(2,1))(x)
+        x = Dropout(0.4)(x)
+        x = Conv2D(filters=128, kernel_size=(10,1), activation = 'relu', padding='same')(x)
+        x = BatchNormalization()(x)
+        x = MaxPooling2D(pool_size=(2,1))(x)
+        x = Dropout(0.4)(x)
+        x = Conv2D(filters=64, kernel_size=(10,3), strides=(1,3),  activation = 'relu', padding='same')(x)
+        x = BatchNormalization()(x)
         x = GlobalAveragePooling2D()(x)
         x = Dropout(0.4)(x)
         output = Dense(units=13, activation='softmax')(x) 
     elif architecture=='dense':
-        input = Input((X_train.shape[1], X_train.shape[2]))
-        x = Dense(32, activation='relu')(input)
-        x = Dense(32, activation='relu')(x)
-        x = Dense(64, activation='relu')(x)
-        x = Dense(64, activation='relu')(x)
-        x = Dense(128, activation='relu')(x)
-        x = Dense(64, activation='relu')(x)
-        x = Dense(64, activation='relu')(x)
-        x = Dense(32, activation='relu')(x)
+        input = Input((X_train.shape[1], X_train.shape[2], X_train.shape[3]))
+        x = Lambda(lambda x: K.squeeze(x, axis=-1))(input)
         x = Flatten()(x)
+        x = Dense(1024, activation='relu')(x)
+        x = Dropout(0.4)(x)
+        x = Dense(512, activation='relu')(x)
+        x = Dropout(0.4)(x)
+        x = Dense(256, activation='relu')(x)
+        x = Dropout(0.4)(x)
+        x = Dense(128, activation='relu')(x)
+        x = Dropout(0.4)(x)
+        x = Dense(64, activation='relu')(x)
+        x = Dropout(0.4)(x)
+        x = Dense(32, activation='relu')(x)
         output = Dense(13, activation='softmax')(x)
     elif architecture=='small':
         input = Input((X_train.shape[2], X_train.shape[3]))
@@ -140,9 +159,9 @@ def model_architecture(X_train, architecture):
 def train_model(X_train, Y_train, X_dev, Y_dev, architecture):
     model = model_architecture(X_train, architecture)
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-    early_stopper = EarlyStopping(patience=3, verbose=1)
+    early_stopper = EarlyStopping(patience=10, verbose=1)
     check_pointer = ModelCheckpoint(filepath='Trained_Networks/network.hdf5', verbose=1, save_best_only=True)
-    model.fit(X_train, Y_train, batch_size=32, epochs=100, shuffle='true',
+    model.fit(X_train, Y_train, batch_size=32, epochs=1000, shuffle='true',
               callbacks=[early_stopper, check_pointer], validation_data=(X_dev, Y_dev))
 
 
@@ -186,4 +205,4 @@ def run_experiment(dataset='end_to_end', architecture='conv'):
 #     architecture = conv            #
 ######################################
 
-predictions = run_experiment(dataset='frequency', architecture='perceptnet')
+predictions = run_experiment(dataset='frequency', architecture='dense')
