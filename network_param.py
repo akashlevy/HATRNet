@@ -16,6 +16,7 @@ from keras import backend as K
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 def load_data(dataset):
     if dataset=='time': # zero padded time data
