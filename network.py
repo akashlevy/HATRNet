@@ -21,12 +21,18 @@ from sklearn.metrics import confusion_matrix
 
 
 def load_data(dataset):
-    if dataset=='end_to_end':
+    if dataset=='time':
         data = sio.loadmat('data/data1.mat')
         data = data['data1']
         data = np.expand_dims(data, axis=-1)
         labels = sio.loadmat('data/y.mat')
         labels = labels['y']
+    elif dataset=='time_slice':
+        data = sio.loadmat('data/data_timeslice.mat')
+        data = data['data_timeslice']
+        data = np.expand_dims(data, axis=-1)
+        labels = sio.loadmat('data/y_timeslice.mat')
+        labels = labels['y_timeslice']
     elif dataset=='frequency':
         data = sio.loadmat('data/data_fft.mat')
         data = data['data_fft']
@@ -187,7 +193,7 @@ def plot_confusion_matrix(Y_true, Y_pred):
     plt.tight_layout()
     plt.show()
 
-def run_experiment(dataset='end_to_end', architecture='conv'):
+def run_experiment(dataset='time', architecture='conv'):
     X_train, X_dev, X_test, Y_train, Y_dev, Y_test = preprocess_data(dataset)
     train_model(X_train, Y_train, X_dev, Y_dev, architecture)
     predictions = evaluate_experiment(X_test, Y_test, architecture)
@@ -199,10 +205,10 @@ def run_experiment(dataset='end_to_end', architecture='conv'):
 ######################################
 # Dataset = feature                  #
 #     architecture = small, dense    #
-# Dataset = end_to_end               #
+# Dataset = time                     #
 #     architecture = conv            #
 # Dataset = frequency                #
 #     architecture = conv            #
 ######################################
 
-predictions = run_experiment(dataset='frequency', architecture='perceptnet')
+predictions = run_experiment(dataset='time_slice', architecture='perceptnet')
