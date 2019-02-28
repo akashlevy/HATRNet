@@ -126,7 +126,7 @@ def model_architecture(X_train, architecture):
         x = Flatten()(x)
         x = Dense(500, activation='relu')(x)
         output = Dense(13, activation='softmax')(x)
-    elif architecture=='lstm':
+    elif architecture=='lstm' or architecture=='lstm2':
         input = Input((None, 6))
         x = CuDNNLSTM(128, return_sequences=True, input_shape=(None, 6))(input)
         x = CuDNNLSTM(32)(x)
@@ -263,4 +263,4 @@ def run_experiment(dataset='time', architecture='conv'):
 #     architecture = conv            #
 ######################################
 
-predictions = run_experiment(dataset='time_raw', architecture='lstm')
+predictions = run_experiment(dataset='time', architecture='lstm2')
