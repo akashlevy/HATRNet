@@ -202,7 +202,7 @@ def model_architecture(X_train, architecture):
 
 def train_model(X_train, Y_train, X_dev, Y_dev, architecture):
     model = model_architecture(X_train, architecture)
-    opt = Adam(lr=0.0005) if architecture=='lstm' else 'adam'
+    opt = Adam(lr=0.0001) if architecture=='lstm' else 'adam'
     model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
     early_stopper = EarlyStopping(patience=10, verbose=1)
     check_pointer = ModelCheckpoint(filepath='Trained_Networks/network.hdf5', verbose=1, save_best_only=True)
