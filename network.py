@@ -127,8 +127,8 @@ def model_architecture(X_train, architecture):
         output = Dense(13, activation='softmax')(x)
     elif architecture=='lstm':
         input = Input((None, 6))
-        x = CuDNNLSTM(128, return_sequences=True, input_shape=(None, 6))(input)
-        x = CuDNNLSTM(32)(x)
+        x = CuDNNLSTM(128, dropout=0.2, dropout_recurrent=0.2, return_sequences=True, input_shape=(None, 6))(input)
+        x = CuDNNLSTM(64, dropout=0.2, dropout_recurrent=0.2)(x)
         output = Dense(13, activation='softmax')(x)
     elif architecture=='late_fusion':
         input = Input((X_train.shape[1], X_train.shape[2], X_train.shape[3]))
