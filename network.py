@@ -241,6 +241,7 @@ def plot_confusion_matrix(Y_true, Y_pred, architecture):
     plt.xlabel('Predicted label')
     plt.tight_layout()
     plt.show()
+    plt.savefig('Results/confmat_%s.png' % architecture)
 
 def run_experiment(dataset='time', architecture='conv'):
     X_train, X_dev, X_test, Y_train, Y_dev, Y_test = preprocess_data(dataset, architecture)
