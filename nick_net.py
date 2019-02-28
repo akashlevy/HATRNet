@@ -110,28 +110,27 @@ def filter_num(base_filter_num, c, block_num):
 
 def percept_leg(input, conv1_block, base_filter_num, conv1_kernel, conv2_kernel, drop):
     for c1 in range(1, conv1_block+1):
-            x = Conv2D(filters=filter_num(base_filter_num, c1, conv1_block), kernel_size=conv1_kernel, activation='relu', padding='same')(input)
-            x = BatchNormalization()(x)
-            x = MaxPooling2D(pool_size=(2,1))(x)
-            x = Dropout(drop)(x)
-        x = Conv2D(filters=base_filter_num, kernel_size=conv2_kernel, strides=(1,3),  activation = 'relu', padding='same')(x)
+        x = Conv2D(filters=filter_num(base_filter_num, c1, conv1_block), kernel_size=conv1_kernel, activation='relu', padding='same')(input)
         x = BatchNormalization()(x)
+        x = MaxPooling2D(pool_size=(2,1))(x)
         x = Dropout(drop)(x)
-        output = Dense(units=13, activation='softmax')(x)
-        return output
+    x = Conv2D(filters=base_filter_num, kernel_size=conv2_kernel, strides=(1,3),  activation = 'relu', padding='same')(x)
+    x = BatchNormalization()(x)
+    x = Dropout(drop)(x)
+    x = GlobalAveragePooling2D()(x)
+    x = Dropout(drop)(x)
+    output = Dense(units=13, activation='softmax')(x)
+    return output
 
 def model_architecture(X_train, architecture, conv1_block, base_filter_num, conv1_kernel, conv2_kernel, drop):
     if architecture=='perceptnet':
         input = Input((X_train.shape[1], X_train.shape[2], X_train.shape[3]))
-        t = Lambda(lambda x: x[:, :, 0:5]))(input)
-        f = Lambda(lambda x: x[:, :, 6:17]))(input)
-        t = percept_leg(t, conv1_block, base_filter_num, conv1_kernel, conv2_kernel, drop):
-        f = percept_leg(f, conv1_block, base_filter_num, conv1_kernel, conv2_kernel, drop):
-       
-
-
-    x = GlobalAveragePooling2D()(x)
-    x = Dropout(drop)(x)
+        t = Lambda(lambda x: x[:, :, 0:5])(input)
+        f = Lambda(lambda x: x[:, :, 6:17])(input)
+        t = percept_leg(t, conv1_block, base_filter_num, conv1_kernel, conv2_kernel, drop)
+        f = percept_leg(f, conv1_block, base_filter_num, conv1_kernel, conv2_kernel, drop)
+        x = concatenate([t, f])
+        x = Dense(500, activation='relu')(x)
         output = Dense(units=13, activation='softmax')(x) 
     model = Model(inputs=[input], outputs=[output])
     plot_model(model, to_file='Network_Figures/'+str(architecture)+'.png', show_shapes=True)
