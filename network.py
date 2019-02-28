@@ -208,8 +208,8 @@ def train_model(X_train, Y_train, X_dev, Y_dev, architecture):
         model.fit(X_train, Y_train, batch_size=32, epochs=1000, shuffle='true',
               callbacks=[early_stopper, check_pointer], validation_data=(X_dev, Y_dev))
     else:
-        model.fit_generator(iter(zip(X_train, Y_train)), steps_per_epoch=len(X_train), epochs=1000, shuffle='true',
-              callbacks=[early_stopper, check_pointer], validation_data=iter(zip(X_dev, Y_dev)), validation_steps=len(X_dev))
+        model.fit_generator(itertools.repeat(zip(X_train, Y_train)), steps_per_epoch=len(X_train), epochs=1000, shuffle='true',
+              callbacks=[early_stopper, check_pointer], validation_data=itertools.repeat(zip(X_dev, Y_dev)), validation_steps=len(X_dev))
 
 
 def evaluate_experiment(X_test, Y_test, architecture):
