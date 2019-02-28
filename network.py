@@ -221,7 +221,8 @@ def train_model(X_train, Y_train, X_dev, Y_dev, architecture, conv1_block, base_
     model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
     early_stopper = EarlyStopping(patience=5, verbose=1)
     check_pointer = ModelCheckpoint(filepath='Trained_Networks/network.hdf5', verbose=1, save_best_only=True)
-    model.fit(X_train, Y_train, batch_size=32, epochs=1, shuffle='true',
+    if architecture != 'lstm':
+        model.fit(X_train, Y_train, batch_size=32, epochs=1, shuffle='true',
               callbacks=[early_stopper, check_pointer], validation_data=(X_dev, Y_dev))
     else:
         model.fit_generator(itertools.cycle(zip(X_train, Y_train)), steps_per_epoch=len(X_train), epochs=1000, shuffle='true',
