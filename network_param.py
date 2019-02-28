@@ -192,14 +192,12 @@ def evaluate_experiment(X_test, Y_test, architecture):
     loaded_model = load_model('Trained_Networks/network.hdf5')  # Loads best loss epoch model
     if architecture != 'lstm':
         evaluation = loaded_model.evaluate(X_test, Y_test, verbose=0)  # Evaluates the loaded model
-    else:
-        evaluation = loaded_model.evaluate_generator(iter(zip(X_test, Y_test)), steps=len(X_test))
-    print('Evaluation Metrics:', loaded_model.metrics_names[0], evaluation[0], loaded_model.metrics_names[1], evaluation[1])  # test loss and accuracy
-    os.rename('Trained_Networks/network.hdf5', 'Trained_Networks/'+str(architecture)+'_'+str('%.4f' % evaluation[1])+'.hdf5')
-    if architecture != 'lstm':
         predictions = loaded_model.predict(X_test)  # Makes the predictions from the loaded model
     else:
+        evaluation = loaded_model.evaluate_generator(iter(zip(X_test, Y_test)), steps=len(X_test))
         predictions = loaded_model.predict_generator(iter(X_test), steps=len(X_test))
+    print('Evaluation Metrics:', loaded_model.metrics_names[0], evaluation[0], loaded_model.metrics_names[1], evaluation[1])  # test loss and accuracy
+    os.rename('Trained_Networks/network.hdf5', 'Trained_Networks/'+str(architecture)+'_'+str('%.4f' % evaluation[1])+'.hdf5')
     return predictions
 
 
