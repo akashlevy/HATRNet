@@ -200,6 +200,14 @@ def evaluate_experiment(X_test, Y_test, architecture):
     os.rename('Trained_Networks/network.hdf5', 'Trained_Networks/'+str(architecture)+'_'+str('%.4f' % evaluation[1])+'.hdf5')
     return predictions
 
+####################################################################
+## Dataset = feature
+##     architecture = small, dense
+## Dataset = time, time_slice, frequency
+##     architecture = perceptnet, conv, late_fusion
+## Dataset = time_and_frequency
+##     architecture = saimese_perceptnet
+####################################################################
 
 predictions = run_experiment(dataset='time_and_frequency', 
                             architecture='perceptnet', 
