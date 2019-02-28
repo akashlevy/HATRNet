@@ -5,7 +5,7 @@ import os
 import matplotlib.pyplot as plt
 import itertools
 from keras.layers import Dense, Dropout, Conv2D, Flatten, Input, BatchNormalization, Lambda, TimeDistributed
-from keras.layers import Conv1D, MaxPooling1D, MaxPooling2D, GlobalAveragePooling2D, CuDNNLSTM
+from keras.layers import Conv1D, MaxPooling1D, MaxPooling2D, GlobalAveragePooling2D, CuDNNLSTM, LSTM
 from keras.layers.merge import concatenate
 from keras.layers.core import Reshape
 from keras.models import Model, load_model, Sequential
@@ -127,8 +127,8 @@ def model_architecture(X_train, architecture):
         output = Dense(13, activation='softmax')(x)
     elif architecture=='lstm':
         input = Input((None, 6))
-        x = CuDNNLSTM(128, dropout=0.2, dropout_recurrent=0.2, return_sequences=True, input_shape=(None, 6))(input)
-        x = CuDNNLSTM(64, dropout=0.2, dropout_recurrent=0.2)(x)
+        x = LSTM(128, dropout=0.2, recurrent_dropout=0.2, return_sequences=True, input_shape=(None, 6))(input)
+        x = LSTM(64, dropout=0.2, recurrent_dropout=0.2)(x)
         output = Dense(13, activation='softmax')(x)
     elif architecture=='late_fusion':
         input = Input((X_train.shape[1], X_train.shape[2], X_train.shape[3]))
