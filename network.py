@@ -127,7 +127,7 @@ def model_architecture(X_train, architecture):
         output = Dense(13, activation='softmax')(x)
     elif architecture=='lstm':
         input = Input((None, 6))
-        x = LSTM(64, dropout=0.2, recurrent_dropout=0.2, return_sequences=True, input_shape=(None, 6))(input)
+        x = LSTM(128, dropout=0.2, recurrent_dropout=0.2, return_sequences=True, input_shape=(None, 6))(input)
         x = LSTM(32, dropout=0.2, recurrent_dropout=0.2)(x)
         output = Dense(13, activation='softmax')(x)
     elif architecture=='late_fusion':
