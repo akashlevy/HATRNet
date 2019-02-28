@@ -4,7 +4,7 @@ import tensorflow as tf
 import os
 import matplotlib.pyplot as plt
 import itertools
-from keras.layers import Dense, Dropout, Conv2D, Flatten, Input, BatchNormalization, Lambda
+from keras.layers import Dense, Dropout, Conv2D, Flatten, Input, BatchNormalization, Lambda, TimeDistributed
 from keras.layers import Conv1D, MaxPooling1D, MaxPooling2D, GlobalAveragePooling2D, CuDNNLSTM
 from keras.layers.merge import concatenate
 from keras.layers.core import Reshape
@@ -19,12 +19,16 @@ from sklearn.metrics import confusion_matrix
 #sess = tf.Session(config=config) 
 #keras.backend.set_session(sess)
 
-
 def load_data(dataset):
     if dataset=='time':
-        data = sio.loadmat('data/data1.mat')
+        data = sio.loadmat('data/data_zeropad.mat')
         data = data['data1']
         data = np.expand_dims(data, axis=-1)
+        labels = sio.loadmat('data/y.mat')
+        labels = labels['y']
+    elif dataset=='time_raw':
+        data = sio.loadmat('data/data_raw.mat')
+        data = data['data']
         labels = sio.loadmat('data/y.mat')
         labels = labels['y']
     elif dataset=='time_slice': # 2 second slices
@@ -59,29 +63,46 @@ def load_data(dataset):
         labels = np.expand_dims(np.concatenate((Y_train, Y_test), axis=0), axis=-1)
     labels = to_categorical(labels)
     print('Data shape:', data.shape, 'Labels shape:', labels.shape)
-    print('Measurement number:', data.shape[0], 'Time number:', data.shape[1], 'Channel number:', data.shape[2])
+    if dataset != 'time_raw':
+        print('Measurement number:', data.shape[0], 'Time number:', data.shape[1], 'Channel number:', data.shape[2])
     return data, labels
 
 
-def standardize(data):
-    mean_values = np.mean(data, axis=1, keepdims=1)
-    data = np.subtract(data, mean_values)
-    std_values = np.std(data, axis=1, keepdims=1)
-    data = np.divide(data, std_values)
-    print('Mean value:', np.mean(data))
-    print('STD value:', np.mean(np.std(data)))
+def standardize(data, architecture):
+    if architecture == 'lstm':
+        data_out = []
+        for d in data[0,:]:
+            mean_values = np.mean(d, axis=0, keepdims=1)
+            d = np.subtract(d, mean_values)
+            std_values = np.std(d, axis=0, keepdims=1)
+            d = np.divide(d, std_values)
+            d = np.expand_dims(d, axis=0)
+            data_out.append(d)
+        data = data_out
+    else:
+        mean_values = np.mean(data, axis=1, keepdims=1)
+        data = np.subtract(data, mean_values)
+        std_values = np.std(data, axis=1, keepdims=1)
+        data = np.divide(data, std_values)
+        print('Mean value:', np.mean(data))
+        print('STD value:', np.mean(np.std(data)))
     return data
 
 
-def preprocess_data(dataset):
+def preprocess_data(dataset, architecture):
     # Loads, standardizes, and splits the data into train, dev, test sets
     data, labels = load_data(dataset)
-    data = standardize(data)
-    X_train, X_test, Y_train, Y_test = train_test_split(data, labels, test_size=0.15, random_state=1)
-    X_train, X_dev, Y_train, Y_dev = train_test_split(X_train, Y_train, test_size=0.40, random_state=1)
-    print('X_train shape:', X_train.shape)
-    print('X_dev shape:', X_dev.shape)
-    print('X_test shape:', X_test.shape)
+    data = standardize(data, architecture)
+    X_train, X_test, Y_train, Y_test = train_test_split(data, labels, test_size=0.40, random_state=1)
+    X_test, X_dev, Y_test, Y_dev = train_test_split(X_test, Y_test, test_size=0.50, random_state=1)
+    if architecture != 'lstm':
+        print('X_train shape:', X_train.shape)
+        print('X_dev shape:', X_dev.shape)
+        print('X_test shape:', X_test.shape)
+    else:
+        Y_train = np.expand_dims(Y_train, axis=1)
+        Y_dev = np.expand_dims(Y_dev, axis=1)
+        Y_test = np.expand_dims(Y_test, axis=1)
     return X_train, X_dev, X_test, Y_train, Y_dev, Y_test
 
 
@@ -105,9 +126,8 @@ def model_architecture(X_train, architecture):
         x = Dense(500, activation='relu')(x)
         output = Dense(13, activation='softmax')(x)
     elif architecture=='lstm':
-        input = Input((X_train.shape[1], X_train.shape[2], X_train.shape[3]))
-        x = Lambda(lambda x: K.squeeze(x, axis=-1))(input)
-        x = CuDNNLSTM(128, return_sequences=True, input_shape=(None, 6))(x)
+        input = Input((None, 6))
+        x = CuDNNLSTM(128, return_sequences=True, input_shape=(None, 6))(input)
         x = CuDNNLSTM(32)(x)
         output = Dense(13, activation='softmax')(x)
     elif architecture=='late_fusion':
@@ -184,8 +204,12 @@ def train_model(X_train, Y_train, X_dev, Y_dev, architecture):
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     early_stopper = EarlyStopping(patience=10, verbose=1)
     check_pointer = ModelCheckpoint(filepath='Trained_Networks/network.hdf5', verbose=1, save_best_only=True)
-    model.fit(X_train, Y_train, batch_size=32, epochs=1000, shuffle='true',
+    if architecture != 'lstm':
+        model.fit(X_train, Y_train, batch_size=32, epochs=1000, shuffle='true',
               callbacks=[early_stopper, check_pointer], validation_data=(X_dev, Y_dev))
+    else:
+        model.fit_generator(iter(zip(X_train, Y_train)), steps_per_epoch=len(X_train), epochs=1000, shuffle='true',
+              callbacks=[early_stopper, check_pointer], validation_data=iter(zip(X_dev, Y_dev)), validation_steps=len(X_dev))
 
 
 def evaluate_experiment(X_test, Y_test, architecture):
@@ -211,7 +235,7 @@ def plot_confusion_matrix(Y_true, Y_pred):
     plt.show()
 
 def run_experiment(dataset='time', architecture='conv'):
-    X_train, X_dev, X_test, Y_train, Y_dev, Y_test = preprocess_data(dataset)
+    X_train, X_dev, X_test, Y_train, Y_dev, Y_test = preprocess_data(dataset, architecture)
     train_model(X_train, Y_train, X_dev, Y_dev, architecture)
     predictions = evaluate_experiment(X_test, Y_test, architecture)
     plot_confusion_matrix(Y_test,predictions)
@@ -228,4 +252,4 @@ def run_experiment(dataset='time', architecture='conv'):
 #     architecture = conv            #
 ######################################
 
-predictions = run_experiment(dataset='time_and_frequency', architecture='perceptnet')
+predictions = run_experiment(dataset='time_raw', architecture='lstm')
