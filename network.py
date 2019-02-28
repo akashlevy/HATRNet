@@ -4,13 +4,8 @@ import tensorflow as tf
 import os
 import matplotlib.pyplot as plt
 import itertools
-<<<<<<< HEAD
 from keras.layers import Dense, Dropout, Conv2D, Flatten, Input, BatchNormalization, Lambda, TimeDistributed
 from keras.layers import Conv1D, MaxPooling1D, MaxPooling2D, GlobalAveragePooling2D, CuDNNLSTM, LSTM
-=======
-from keras.layers import Dense, Dropout, Conv2D, Flatten, Input, BatchNormalization, Lambda
-from keras.layers import Conv1D, MaxPooling1D, MaxPooling2D, GlobalAveragePooling2D, CuDNNLSTM
->>>>>>> parent of c8c9773... commit
 from keras.layers.merge import concatenate
 from keras.layers.core import Reshape
 from keras.models import Model, load_model, Sequential
@@ -228,12 +223,9 @@ def train_model(X_train, Y_train, X_dev, Y_dev, architecture, conv1_block, base_
     check_pointer = ModelCheckpoint(filepath='Trained_Networks/network.hdf5', verbose=1, save_best_only=True)
     model.fit(X_train, Y_train, batch_size=32, epochs=1, shuffle='true',
               callbacks=[early_stopper, check_pointer], validation_data=(X_dev, Y_dev))
-<<<<<<< HEAD
     else:
         model.fit_generator(itertools.cycle(zip(X_train, Y_train)), steps_per_epoch=len(X_train), epochs=1000, shuffle='true',
               callbacks=[early_stopper, check_pointer], validation_data=itertools.cycle(zip(X_dev, Y_dev)), validation_steps=len(X_dev))
-=======
->>>>>>> parent of c8c9773... commit
 
 
 def evaluate_experiment(X_test, Y_test, architecture):
