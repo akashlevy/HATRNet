@@ -226,7 +226,12 @@ def evaluate_experiment(X_test, Y_test, architecture):
         predictions = loaded_model.predict_generator(iter(X_test), steps=len(X_test))
     return predictions
 
-def plot_confusion_matrix(Y_true, Y_pred):
+def plot_confusion_matrix(Y_true, Y_pred, architecture):
+    print(Y_true.shape, Y_pred.shape)
+    if architecture == 'lstm':
+        Y_true = np.squeeze(Y_true, axis=1)
+        Y_pred = np.squeeze(Y_pred, axis=1)
+    print(Y_true.shape, Y_pred.shape)
     matrix = confusion_matrix(Y_true.argmax(axis=1), Y_pred.argmax(axis=1))
     plt.figure()
     plt.imshow(matrix, interpolation='nearest')
@@ -244,7 +249,7 @@ def run_experiment(dataset='time', architecture='conv'):
     X_train, X_dev, X_test, Y_train, Y_dev, Y_test = preprocess_data(dataset, architecture)
     train_model(X_train, Y_train, X_dev, Y_dev, architecture)
     predictions = evaluate_experiment(X_test, Y_test, architecture)
-    plot_confusion_matrix(Y_test,predictions)
+    plot_confusion_matrix(Y_test, predictions, architecture)
     return predictions
 
 
