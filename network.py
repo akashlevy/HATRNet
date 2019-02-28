@@ -126,8 +126,13 @@ def model_architecture(X_train, architecture):
         x = Flatten()(x)
         x = Dense(500, activation='relu')(x)
         output = Dense(13, activation='softmax')(x)
-    elif architecture=='lstm' or architecture=='lstm2':
+    elif architecture=='lstm':
         input = Input((None, 6))
+        x = CuDNNLSTM(128, return_sequences=True, input_shape=(None, 6))(input)
+        x = CuDNNLSTM(32)(x)
+        output = Dense(13, activation='softmax')(x)
+    elif architecture=='lstm2':
+        input = Input((X_train.shape[1], X_train.shape[2], X_train.shape[3]))
         x = CuDNNLSTM(128, return_sequences=True, input_shape=(None, 6))(input)
         x = CuDNNLSTM(32)(x)
         output = Dense(13, activation='softmax')(x)
