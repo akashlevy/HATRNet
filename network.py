@@ -127,8 +127,8 @@ def model_architecture(X_train, architecture):
         output = Dense(13, activation='softmax')(x)
     elif architecture=='lstm':
         input = Input((None, 6))
-        x = LSTM(128, dropout=0.2, recurrent_dropout=0.2, return_sequences=True, input_shape=(None, 6))(input)
-        x = LSTM(32, dropout=0.2, recurrent_dropout=0.2)(x)
+        x = CuDNNLSTM(128, return_sequences=True, input_shape=(None, 6))(input)
+        x = CuDNNLSTM(32)(x)
         output = Dense(13, activation='softmax')(x)
     elif architecture=='late_fusion':
         input = Input((X_train.shape[1], X_train.shape[2], X_train.shape[3]))
@@ -201,7 +201,8 @@ def model_architecture(X_train, architecture):
 
 def train_model(X_train, Y_train, X_dev, Y_dev, architecture):
     model = model_architecture(X_train, architecture)
-    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    opt = keras.optimizers.Adam(lr=0.001, decay=0.04) if architecture=='lstm' else 'adam'
+    model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
     early_stopper = EarlyStopping(patience=10, verbose=1)
     check_pointer = ModelCheckpoint(filepath='Trained_Networks/network.hdf5', verbose=1, save_best_only=True)
     if architecture != 'lstm':
