@@ -133,7 +133,8 @@ def model_architecture(X_train, architecture):
         output = Dense(13, activation='softmax')(x)
     elif architecture=='lstm2':
         input = Input((X_train.shape[1], X_train.shape[2], X_train.shape[3]))
-        x = CuDNNLSTM(128, return_sequences=True, input_shape=(None, 6))(input)
+        x = Lambda(lambda x: K.squeeze(x, axis=-1))(input)
+        x = CuDNNLSTM(128, return_sequences=True, input_shape=(None, 6))(x)
         x = CuDNNLSTM(32)(x)
         output = Dense(13, activation='softmax')(x)
     elif architecture=='late_fusion':
