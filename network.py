@@ -5,7 +5,7 @@ import os
 import matplotlib.pyplot as plt
 import itertools
 from keras.layers import Dense, Dropout, Conv2D, Flatten, Input, BatchNormalization, Lambda
-from keras.layers import Conv1D, MaxPooling1D, MaxPooling2D, GlobalAveragePooling2D
+from keras.layers import Conv1D, MaxPooling1D, MaxPooling2D, GlobalAveragePooling2D, CuDNNLSTM
 from keras.layers.merge import concatenate
 from keras.layers.core import Reshape
 from keras.models import Model, load_model, Sequential
@@ -27,7 +27,7 @@ def load_data(dataset):
         data = np.expand_dims(data, axis=-1)
         labels = sio.loadmat('data/y.mat')
         labels = labels['y']
-    elif dataset=='time_slice':
+    elif dataset=='time_slice': # 2 second slices
         data = sio.loadmat('data/data_timeslice.mat')
         data = data['data_timeslice']
         data = np.expand_dims(data, axis=-1)
@@ -36,6 +36,17 @@ def load_data(dataset):
     elif dataset=='frequency':
         data = sio.loadmat('data/data_fft.mat')
         data = data['data_fft']
+        data = np.expand_dims(data, axis=-1)
+        labels = sio.loadmat('data/y.mat')
+        labels = labels['y']
+    elif dataset=='time_and_frequency':
+        data1 = sio.loadmat('data/data_time_and_fft1.mat')
+        data1 = data1['data_time_and_fft1']
+        data2 = sio.loadmat('data/data_time_and_fft2.mat')
+        data2 = data2['data_time_and_fft2']
+        data3 = sio.loadmat('data/data_time_and_fft3.mat')
+        data3 = data3['data_time_and_fft3']
+        data = np.concatenate((data1,data2,data3),axis=0)
         data = np.expand_dims(data, axis=-1)
         labels = sio.loadmat('data/y.mat')
         labels = labels['y']
@@ -96,8 +107,8 @@ def model_architecture(X_train, architecture):
     elif architecture=='lstm':
         input = Input((X_train.shape[1], X_train.shape[2], X_train.shape[3]))
         x = Lambda(lambda x: K.squeeze(x, axis=-1))(input)
-        x = LSTM(128, return_sequences=True, input_shape=(None, 6))(x)
-        x = LSTM(32)(x)
+        x = CuDNNLSTM(128, return_sequences=True, input_shape=(None, 6))(x)
+        x = CuDNNLSTM(32)(x)
         output = Dense(13, activation='softmax')(x)
     elif architecture=='late_fusion':
         input = Input((X_train.shape[1], X_train.shape[2], X_train.shape[3]))
@@ -217,4 +228,4 @@ def run_experiment(dataset='time', architecture='conv'):
 #     architecture = conv            #
 ######################################
 
-predictions = run_experiment(dataset='time_slice', architecture='perceptnet')
+predictions = run_experiment(dataset='time_and_frequency', architecture='perceptnet')
