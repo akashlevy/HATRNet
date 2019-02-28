@@ -227,11 +227,8 @@ def evaluate_experiment(X_test, Y_test, architecture):
     return predictions
 
 def plot_confusion_matrix(Y_true, Y_pred, architecture):
-    print(Y_true.shape, Y_pred.shape)
     if architecture == 'lstm':
         Y_true = np.squeeze(Y_true, axis=1)
-        Y_pred = np.squeeze(Y_pred, axis=1)
-    print(Y_true.shape, Y_pred.shape)
     matrix = confusion_matrix(Y_true.argmax(axis=1), Y_pred.argmax(axis=1))
     plt.figure()
     plt.imshow(matrix, interpolation='nearest')
