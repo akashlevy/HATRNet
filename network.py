@@ -9,6 +9,7 @@ from keras.layers import Conv1D, MaxPooling1D, MaxPooling2D, GlobalAveragePoolin
 from keras.layers.merge import concatenate
 from keras.layers.core import Reshape
 from keras.models import Model, load_model, Sequential
+from keras.optimizers import Adam
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.utils import to_categorical, plot_model
 from keras import backend as K
@@ -201,7 +202,7 @@ def model_architecture(X_train, architecture):
 
 def train_model(X_train, Y_train, X_dev, Y_dev, architecture):
     model = model_architecture(X_train, architecture)
-    opt = keras.optimizers.Adam(lr=0.001, decay=0.) if architecture=='lstm' else 'adam'
+    opt = Adam(lr=0.001, decay=0.) if architecture=='lstm' else 'adam'
     model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
     early_stopper = EarlyStopping(patience=10, verbose=1)
     check_pointer = ModelCheckpoint(filepath='Trained_Networks/network.hdf5', verbose=1, save_best_only=True)
