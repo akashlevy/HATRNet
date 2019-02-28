@@ -39,6 +39,17 @@ def load_data(dataset):
         data = np.expand_dims(data, axis=-1)
         labels = sio.loadmat('data/y.mat')
         labels = labels['y']
+    elif dataset=='time_and_frequency':
+        data1 = sio.loadmat('data/data_time_and_fft1.mat')
+        data1 = data1['data_time_and_fft1']
+        data2 = sio.loadmat('data/data_time_and_fft2.mat')
+        data2 = data2['data_time_and_fft2']
+        data3 = sio.loadmat('data/data_time_and_fft3.mat')
+        data3 = data3['data_time_and_fft3']
+        data = np.concatenate((data1,data2,data3),axis=0)
+        data = np.expand_dims(data, axis=-1)
+        labels = sio.loadmat('data/y.mat')
+        labels = labels['y']
     elif dataset=='feature':
         X_train = np.loadtxt('data/HAPT_dataset/Train/X_train.txt')
         Y_train = np.loadtxt('data/HAPT_dataset/Train/y_train.txt')
@@ -217,4 +228,4 @@ def run_experiment(dataset='time', architecture='conv'):
 #     architecture = conv            #
 ######################################
 
-predictions = run_experiment(dataset='time', architecture='lstm')
+predictions = run_experiment(dataset='time_and_frequency', architecture='perceptnet')
