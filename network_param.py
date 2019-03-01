@@ -4,6 +4,9 @@ import tensorflow as tf
 import os
 import matplotlib.pyplot as plt
 import itertools
+import csv
+import random
+from random import randint
 from keras.layers import Dense, Dropout, Conv2D, Flatten, Input, BatchNormalization, Lambda
 from keras.layers import Conv1D, MaxPooling1D, MaxPooling2D, GlobalAveragePooling2D
 from keras.layers.merge import concatenate
@@ -103,6 +106,7 @@ def preprocess_data(dataset, architecture):
         Y_test = np.expand_dims(Y_test, axis=1)
     return X_train, X_dev, X_test, Y_train, Y_dev, Y_test
 
+
 def filter_num(base_filter_num, c, block_num):
     f_pow = min(c, block_num - c)
     if c > block_num/2:
@@ -111,8 +115,9 @@ def filter_num(base_filter_num, c, block_num):
 
 
 def percept_leg(input, conv1_block, base_filter_num, conv1_kernel, conv2_kernel, drop):
+    x = input
     for c1 in range(1, conv1_block+1):
-        x = Conv2D(filters=filter_num(base_filter_num, c1, conv1_block), kernel_size=conv1_kernel, activation='relu', padding='same')(input)
+        x = Conv2D(filters=filter_num(base_filter_num, c1, conv1_block), kernel_size=conv1_kernel, activation='relu', padding='same')(x)
         x = BatchNormalization()(x)
         x = MaxPooling2D(pool_size=(2,1))(x)
         x = Dropout(drop)(x)
@@ -125,7 +130,7 @@ def percept_leg(input, conv1_block, base_filter_num, conv1_kernel, conv2_kernel,
     return output
 
 
-def model_architecture(X_train, architecture, conv1_block, base_filter_num, conv1_kernel, conv2_kernel, drop):
+def model_architecture(X_train, architecture, conv1_block, base_filter_num, conv1_kernel, conv2_kernel, dense_size, drop):
     if architecture=='lstm':
         input = Input((None, 6))
         x = CuDNNLSTM(128, return_sequences=True, input_shape=(None, 6))(input)
@@ -138,7 +143,7 @@ def model_architecture(X_train, architecture, conv1_block, base_filter_num, conv
         t = percept_leg(t, conv1_block, base_filter_num, conv1_kernel, conv2_kernel, drop)
         f = percept_leg(f, conv1_block, base_filter_num, conv1_kernel, conv2_kernel, drop)
         x = concatenate([t, f])
-        x = Dense(500, activation='relu')(x)
+        x = Dense(dense_size, activation='relu')(x)
         output = Dense(units=13, activation='softmax')(x)
     elif architecture=='dense':
         input = Input((X_train.shape[1], X_train.shape[2], X_train.shape[3]))
@@ -167,11 +172,11 @@ def model_architecture(X_train, architecture, conv1_block, base_filter_num, conv
     return model
 
 
-def train_model(X_train, Y_train, X_dev, Y_dev, architecture, conv1_block, base_filter_num, conv1_kernel, conv2_kernel, drop, batch_size, learning_rate):
-    model = model_architecture(X_train, architecture, conv1_block, base_filter_num, conv1_kernel, conv2_kernel, drop)
+def train_model(X_train, Y_train, X_dev, Y_dev, architecture, conv1_block, base_filter_num, conv1_kernel, conv2_kernel, dense_size, drop, batch_size, learning_rate):
+    model = model_architecture(X_train, architecture, conv1_block, base_filter_num, conv1_kernel, conv2_kernel, dense_size, drop)
     opt = Adam(lr=learning_rate)
     model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
-    early_stopper = EarlyStopping(patience=10, verbose=1)
+    early_stopper = EarlyStopping(patience=1, verbose=1)
     check_pointer = ModelCheckpoint(filepath='Trained_Networks/network.hdf5', verbose=1, save_best_only=True)
     if architecture != 'lstm':
         model.fit(X_train, Y_train, batch_size=batch_size, epochs=1000, shuffle='true',
@@ -181,11 +186,11 @@ def train_model(X_train, Y_train, X_dev, Y_dev, architecture, conv1_block, base_
               callbacks=[early_stopper, check_pointer], validation_data=itertools.cycle(zip(X_dev, Y_dev)), validation_steps=len(X_dev))
 
 
-def run_experiment(dataset='time', architecture='conv', conv1_block=4, base_filter_num=32, conv1_kernel=(20,1), conv2_kernel=(20,3), drop=0.4, batch_size=32, learning_rate=0.001):
+def run_experiment(dataset='time', architecture='conv', conv1_block=4, base_filter_num=32, conv1_kernel=(20,1), conv2_kernel=(20,3), dense_size=20, drop=0.4, batch_size=32, learning_rate=0.001):
     X_train, X_dev, X_test, Y_train, Y_dev, Y_test = preprocess_data(dataset, architecture)
-    train_model(X_train, Y_train, X_dev, Y_dev, architecture, conv1_block, base_filter_num, conv1_kernel, conv2_kernel, drop, batch_size, learning_rate)
-    predictions = evaluate_experiment(X_test, Y_test, architecture)
-    return predictions
+    history = train_model(X_train, Y_train, X_dev, Y_dev, architecture, conv1_block, base_filter_num, conv1_kernel, conv2_kernel, dense_size, drop, batch_size, learning_rate)
+    evaluation, predictions = evaluate_experiment(X_dev, Y_dev, architecture) # evaluate on dev set -> hyperparameter search
+    return evaluation, predictions
 
 
 def evaluate_experiment(X_test, Y_test, architecture):
@@ -198,7 +203,7 @@ def evaluate_experiment(X_test, Y_test, architecture):
         predictions = loaded_model.predict_generator(iter(X_test), steps=len(X_test))
     print('Evaluation Metrics:', loaded_model.metrics_names[0], evaluation[0], loaded_model.metrics_names[1], evaluation[1])  # test loss and accuracy
     os.rename('Trained_Networks/network.hdf5', 'Trained_Networks/'+str(architecture)+'_'+str('%.4f' % evaluation[1])+'.hdf5')
-    return predictions
+    return evaluation, predictions
 
 ####################################################################
 ## Dataset = feature
@@ -209,11 +214,44 @@ def evaluate_experiment(X_test, Y_test, architecture):
 ##     architecture = saimese_perceptnet
 ####################################################################
 
-predictions = run_experiment(dataset='time_and_frequency', 
-                            architecture='perceptnet', 
-                            conv1_block=9,
-                            base_filter_num=32, 
-                            conv1_kernel=(20,1), conv2_kernel=(20,3), 
-                            drop=0.4,
-                            batch_size=32,
-                            learning_rate=0.001)
+with open('Results/hyperparm_results.csv', mode='w') as results_file:
+    results_file = csv.writer(results_file, delimiter=',')
+    results_file.writerow(['#Run','conv1_block', 'base_filter_num', 'conv1_kernel', 'conv2_kernel', 'dense_size', 'drop', 'batch_size', 'learning_rate', 'avg_accuracy_validation', 'avg_loss_validation'])
+    
+
+for i in range(1000): # number of different configuration
+    conv1_block=randint(1,8)
+    base_filter_num=randint(2,100)
+    conv1_kernel=randint(2,50)
+    conv2_kernel=randint(2,50)
+    dense_size=randint(13,100)
+    drop=random.uniform(0,1)
+    batch_size=pow(2,randint(2,7)) # between 4 and 128 (powers of 2)
+    learning_rate=np.logspace(-4,1,1000)[randint(0,999)]
+
+    for j in range(4): # average over n runs for each configuration
+        avg_accuracy = 0
+        avg_loss = 0
+   
+        evaluation, predictions = run_experiment(dataset='time_and_frequency', 
+                        architecture='perceptnet', 
+                        conv1_block=conv1_block,
+                        base_filter_num=base_filter_num, 
+                        conv1_kernel=(conv1_kernel,1), conv2_kernel=(conv2_kernel,3), 
+                        dense_size=dense_size,
+                        drop=drop,
+                        batch_size=batch_size,
+                        learning_rate=learning_rate)
+        print(evaluation)
+        avg_accuracy += evaluation[1]
+        avg_loss += evaluation[0]
+        if j==0 and avg_accuracy < 0.8:
+            break
+    avg_accuracy = avg_accuracy/(j+1)
+    avg_loss = avg_loss/(j+1)
+
+    with open('Results/hyperparm_results.csv', mode='a') as results_file:
+        results_file = csv.writer(results_file, delimiter=',')
+        results_file.writerow([i,conv1_block, base_filter_num, conv1_kernel, conv2_kernel, dense_size, drop, batch_size, learning_rate, avg_accuracy, avg_loss])
+
+    
