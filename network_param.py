@@ -176,13 +176,13 @@ def train_model(X_train, Y_train, X_dev, Y_dev, architecture, conv1_block, base_
     model = model_architecture(X_train, architecture, conv1_block, base_filter_num, conv1_kernel, conv2_kernel, dense_size, drop)
     opt = Adam(lr=learning_rate)
     model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
-    early_stopper = EarlyStopping(patience=1, verbose=1)
+    early_stopper = EarlyStopping(patience=5, verbose=1)
     check_pointer = ModelCheckpoint(filepath='Trained_Networks/network.hdf5', verbose=1, save_best_only=True)
     if architecture != 'lstm':
-        model.fit(X_train, Y_train, batch_size=batch_size, epochs=1000, shuffle='true',
+        model.fit(X_train, Y_train, batch_size=batch_size, epochs=100, shuffle='true',
               callbacks=[early_stopper, check_pointer], validation_data=(X_dev, Y_dev))
     else:
-        model.fit_generator(itertools.cycle(zip(X_train, Y_train)), steps_per_epoch=len(X_train), epochs=1000, shuffle='true',
+        model.fit_generator(itertools.cycle(zip(X_train, Y_train)), steps_per_epoch=len(X_train), epochs=100, shuffle='true',
               callbacks=[early_stopper, check_pointer], validation_data=itertools.cycle(zip(X_dev, Y_dev)), validation_steps=len(X_dev))
 
 
@@ -202,7 +202,8 @@ def evaluate_experiment(X_test, Y_test, architecture):
         evaluation = loaded_model.evaluate_generator(iter(zip(X_test, Y_test)), steps=len(X_test))
         predictions = loaded_model.predict_generator(iter(X_test), steps=len(X_test))
     print('Evaluation Metrics:', loaded_model.metrics_names[0], evaluation[0], loaded_model.metrics_names[1], evaluation[1])  # test loss and accuracy
-    os.rename('Trained_Networks/network.hdf5', 'Trained_Networks/'+str(architecture)+'_'+str('%.4f' % evaluation[1])+'.hdf5')
+    #os.rename('Trained_Networks/network.hdf5', 'Trained_Networks/'+str(architecture)+'_'+str('%.4f' % evaluation[1])+'.hdf5')
+    os.remove('Trained_Networks/network.hdf5') # in hyperparam search: delete model (hyperparams are saved)
     return evaluation, predictions
 
 ####################################################################
@@ -216,22 +217,22 @@ def evaluate_experiment(X_test, Y_test, architecture):
 
 with open('Results/hyperparm_results.csv', mode='w') as results_file:
     results_file = csv.writer(results_file, delimiter=',')
-    results_file.writerow(['#Run','conv1_block', 'base_filter_num', 'conv1_kernel', 'conv2_kernel', 'dense_size', 'drop', 'batch_size', 'learning_rate', 'avg_accuracy_validation', 'avg_loss_validation'])
+    results_file.writerow(['#Run','conv1_block', 'base_filter_num', 'conv1_kernel', 'conv2_kernel', 'dense_size', 'drop', 'batch_size', 'learning_rate', 'avg_loss_validation', 'avg_accuracy_validation'])
     
 
 for i in range(1000): # number of different configuration
-    conv1_block=randint(1,8)
-    base_filter_num=randint(2,100)
+    conv1_block=randint(1,6)
+    base_filter_num=randint(2,50)
     conv1_kernel=randint(2,50)
     conv2_kernel=randint(2,50)
-    dense_size=randint(13,100)
-    drop=random.uniform(0,1)
-    batch_size=pow(2,randint(2,7)) # between 4 and 128 (powers of 2)
+    dense_size=randint(5,100)
+    drop=random.uniform(0,0.9)
+    batch_size=pow(2,randint(2,6)) # between 4 and 64 (powers of 2)
     learning_rate=np.logspace(-4,1,1000)[randint(0,999)]
 
-    for j in range(4): # average over n runs for each configuration
-        avg_accuracy = 0
+    for j in range(1): # average over n runs for each configuration (n=1 for coarse search, n=4-10 for fine search)
         avg_loss = 0
+        avg_accuracy = 0
    
         evaluation, predictions = run_experiment(dataset='time_and_frequency', 
                         architecture='perceptnet', 
@@ -243,15 +244,16 @@ for i in range(1000): # number of different configuration
                         batch_size=batch_size,
                         learning_rate=learning_rate)
         print(evaluation)
-        avg_accuracy += evaluation[1]
         avg_loss += evaluation[0]
-        if j==0 and avg_accuracy < 0.8:
+        avg_accuracy += evaluation[1]
+        K.clear_session() # clears session to prevent slowdown 
+        if j==0 and avg_accuracy < 0.8: # Kill for loop in case of a bad model after first run
             break
-    avg_accuracy = avg_accuracy/(j+1)
     avg_loss = avg_loss/(j+1)
+    avg_accuracy = avg_accuracy/(j+1)
 
     with open('Results/hyperparm_results.csv', mode='a') as results_file:
         results_file = csv.writer(results_file, delimiter=',')
-        results_file.writerow([i,conv1_block, base_filter_num, conv1_kernel, conv2_kernel, dense_size, drop, batch_size, learning_rate, avg_accuracy, avg_loss])
+        results_file.writerow([i,conv1_block, base_filter_num, conv1_kernel, conv2_kernel, dense_size, drop, batch_size, learning_rate, avg_loss, avg_accuracy])
 
     
