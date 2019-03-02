@@ -1,7 +1,7 @@
 clear all;
 close all;
 
-load('data/data1.mat'); data=data1;
+load('data/data_raw.mat'); data=data_raw; y=r_raw;
 load('data/y.mat')
 load('data/length.mat'); len=length; clear length;
 Fs = 50;
