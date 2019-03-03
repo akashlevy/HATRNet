@@ -8,8 +8,6 @@ max_length = max(labels(:,5)-labels(:,4))+1;
 
 
 %% Loop through raw data .txt files and save them in different forms
-data_timeslice = [];
-y_timeslice = [];
 for i=1:length(labels)
     % Load one piece of raw data
     acc = importdata(['acc_exp',num2str(labels(i,1),'%02.f'),'_user',num2str(labels(i,2),'%02.f'),'.txt']);
@@ -65,12 +63,13 @@ X_train = X_train - mean(X_train,2);
 X_train = X_train ./ std(X_train,0,2);
 X_dev = X_dev - mean(X_dev,2);
 X_dev = X_dev ./ std(X_dev,0,2);
-X_test = X_test - mean(X_dev,2);
-X_test = X_test ./ std(X_dev,0,2);
+X_test = X_test - mean(X_test,2);
+X_test = X_test ./ std(X_test,0,2);
 
 % Save
 save('data/data_timeslice.mat','X_train','Y_train','X_dev','Y_dev','X_test','Y_test');
 clear X_train Y_train X_dev Y_dev X_test Y_test;
+
 
 %% Split raw data in train, dev and test and augment training data
 % Train, Dev, Test Ratio
@@ -100,7 +99,7 @@ X_train_aug = {};
 Y_train_aug = [];
 for i=1:length(X_train_raw)
     X_train_aug{end+1} = X_train_raw{i};
-    Y_train_aug(end+1) = Y_train_raw(i);
+    Y_train_aug(end+1,1) = Y_train_raw(i);
     for j=1:4 % Four augmentations per training example
         r = 0.75 + 0.5*rand(1); % Factor between 0.75 and 1.25
         x_old = linspace(0,1,length(X_train_raw{i}));
@@ -123,14 +122,17 @@ L = max(cellfun(@length,[X_train_aug,X_dev_raw,X_test_raw]));
 
 for i=1:length(X_train_aug)
     X_train(i,:,:) = [X_train_aug{i}; zeros(L-length(X_train_aug{i}),6)];
+    X_train_dup(i,:,:) = [X_train_aug{i}; X_train_aug{i}; zeros(2*L-2*length(X_train_aug{i}),6)];
 end
 Y_train = Y_train_aug;
 for i=1:length(X_dev_raw)
     X_dev(i,:,:) = [X_dev_raw{i}; zeros(L-length(X_dev_raw{i}),6)];
+    X_dev_dup(i,:,:) = [X_dev_raw{i}; X_dev_raw{i}; zeros(2*L-2*length(X_dev_raw{i}),6)];
 end
 Y_dev = Y_dev_raw;
 for i=1:length(X_test_raw)
     X_test(i,:,:) = [X_test_raw{i}; zeros(L-length(X_test_raw{i}),6)];
+    X_test_dup(i,:,:) = [X_test_raw{i}; X_test_raw{i}; zeros(2*L-2*length(X_test_raw{i}),6)];
 end
 Y_test = Y_test_raw;
 
@@ -139,8 +141,8 @@ X_train = X_train - mean(X_train,2);
 X_train = X_train ./ std(X_train,0,2);
 X_dev = X_dev - mean(X_dev,2);
 X_dev = X_dev ./ std(X_dev,0,2);
-X_test = X_test - mean(X_dev,2);
-X_test = X_test ./ std(X_dev,0,2);
+X_test = X_test - mean(X_test,2);
+X_test = X_test ./ std(X_test,0,2);
 
 % Save
 save('data/data_zeropad.mat','X_train','Y_train','X_dev','Y_dev','X_test','Y_test');
@@ -200,4 +202,54 @@ X_dev = X_dev_fft;
 X_test = X_test_fft;
 save('data/data_fft.mat','X_train','Y_train','X_dev','Y_dev','X_test','Y_test');
 
+
+%% Save duplicated + zeropadded data concatenated with frequency data
+% Perform FFT on raw data (including augmented data)
+Fs = 50;
+T = 1/Fs;
+L = size(X_train_dup,2); % length of longest time-series
+
+% FFT Training data
+for i=1:length(X_train_aug)
+    X_temp_dup = [X_train_aug{i};X_train_aug{i}];
+    [~,X_train_fft(i,:,1),X_train_fft(i,:,4)] = fft_freq(X_temp_dup(:,1), Fs, 2*L);
+    [~,X_train_fft(i,:,2),X_train_fft(i,:,5)] = fft_freq(X_temp_dup(:,2), Fs, 2*L);
+    [~,X_train_fft(i,:,3),X_train_fft(i,:,6)] = fft_freq(X_temp_dup(:,3), Fs, 2*L);
+    [~,X_train_fft(i,:,7),X_train_fft(i,:,10)] = fft_freq(X_temp_dup(:,4), Fs, 2*L);
+    [~,X_train_fft(i,:,8),X_train_fft(i,:,11)] = fft_freq(X_temp_dup(:,5), Fs, 2*L);
+    [~,X_train_fft(i,:,9),X_train_fft(i,:,12)] = fft_freq(X_temp_dup(:,6), Fs, 2*L);
+end
+X_train_fft = X_train_fft(:,1:end-1,:); % cut last sample (fft generates L+1 samples)
+
+% FFT Dev data
+for i=1:length(X_dev_raw)
+    X_temp_dup = [X_dev_raw{i};X_dev_raw{i}];
+    [~,X_dev_fft(i,:,1),X_dev_fft(i,:,4)] = fft_freq(X_temp_dup(:,1), Fs, 2*L);
+    [~,X_dev_fft(i,:,2),X_dev_fft(i,:,5)] = fft_freq(X_temp_dup(:,2), Fs, 2*L);
+    [~,X_dev_fft(i,:,3),X_dev_fft(i,:,6)] = fft_freq(X_temp_dup(:,3), Fs, 2*L);
+    [~,X_dev_fft(i,:,7),X_dev_fft(i,:,10)] = fft_freq(X_temp_dup(:,4), Fs, 2*L);
+    [~,X_dev_fft(i,:,8),X_dev_fft(i,:,11)] = fft_freq(X_temp_dup(:,5), Fs, 2*L);
+    [~,X_dev_fft(i,:,9),X_dev_fft(i,:,12)] = fft_freq(X_temp_dup(:,6), Fs, 2*L);
+end
+X_dev_fft = X_dev_fft(:,1:end-1,:); % cut last sample (fft generates L+1 samples)
+
+% FFT Test data
+for i=1:length(X_test_raw)
+    X_temp_dup = [X_test_raw{i};X_test_raw{i}];
+    [~,X_test_fft(i,:,1),X_test_fft(i,:,4)] = fft_freq(X_temp_dup(:,1), Fs, 2*L);
+    [~,X_test_fft(i,:,2),X_test_fft(i,:,5)] = fft_freq(X_temp_dup(:,2), Fs, 2*L);
+    [~,X_test_fft(i,:,3),X_test_fft(i,:,6)] = fft_freq(X_temp_dup(:,3), Fs, 2*L);
+    [~,X_test_fft(i,:,7),X_test_fft(i,:,10)] = fft_freq(X_temp_dup{i}(:,4), Fs, 2*L);
+    [~,X_test_fft(i,:,8),X_test_fft(i,:,11)] = fft_freq(X_temp_dup{i}(:,5), Fs, 2*L);
+    [~,X_test_fft(i,:,9),X_test_fft(i,:,12)] = fft_freq(X_temp_dup{i}(:,6), Fs, 2*L);
+end
+X_test_fft = X_test_fft(:,1:end-1,:); % cut last sample (fft generates L+1 samples)
+
+% Concatenate with time data
+X_train = cat(3,X_train_dup,X_train_fft);
+X_dev = cat(3,X_dev_dup,X_dev_fft);
+X_test = cat(3,X_test_dup,X_test_fft);
+
+% Save concatenated data
+save('data/data_time_and_fft_dup.mat','X_train','Y_train','X_dev','Y_dev','X_test','Y_test');
 
