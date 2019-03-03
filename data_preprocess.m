@@ -111,7 +111,7 @@ for i=1:length(X_train_raw)
         temp5 = interp1(x_old,X_train_raw{i}(:,5),x_new);
         temp6 = interp1(x_old,X_train_raw{i}(:,6),x_new);
         X_train_aug{end+1} = [temp1',temp2',temp3',temp4',temp5',temp6'];
-        Y_train_aug(end+1) = Y_train_raw(i);
+        Y_train_aug(end+1,1) = Y_train_raw(i);
     end
 end
 
@@ -204,6 +204,7 @@ save('data/data_fft.mat','X_train','Y_train','X_dev','Y_dev','X_test','Y_test');
 
 
 %% Save duplicated + zeropadded data concatenated with frequency data
+clear X_train_fft X_dev_fft X_test_fft;
 % Perform FFT on raw data (including augmented data)
 Fs = 50;
 T = 1/Fs;
@@ -239,9 +240,9 @@ for i=1:length(X_test_raw)
     [~,X_test_fft(i,:,1),X_test_fft(i,:,4)] = fft_freq(X_temp_dup(:,1), Fs, 2*L);
     [~,X_test_fft(i,:,2),X_test_fft(i,:,5)] = fft_freq(X_temp_dup(:,2), Fs, 2*L);
     [~,X_test_fft(i,:,3),X_test_fft(i,:,6)] = fft_freq(X_temp_dup(:,3), Fs, 2*L);
-    [~,X_test_fft(i,:,7),X_test_fft(i,:,10)] = fft_freq(X_temp_dup{i}(:,4), Fs, 2*L);
-    [~,X_test_fft(i,:,8),X_test_fft(i,:,11)] = fft_freq(X_temp_dup{i}(:,5), Fs, 2*L);
-    [~,X_test_fft(i,:,9),X_test_fft(i,:,12)] = fft_freq(X_temp_dup{i}(:,6), Fs, 2*L);
+    [~,X_test_fft(i,:,7),X_test_fft(i,:,10)] = fft_freq(X_temp_dup(:,4), Fs, 2*L);
+    [~,X_test_fft(i,:,8),X_test_fft(i,:,11)] = fft_freq(X_temp_dup(:,5), Fs, 2*L);
+    [~,X_test_fft(i,:,9),X_test_fft(i,:,12)] = fft_freq(X_temp_dup(:,6), Fs, 2*L);
 end
 X_test_fft = X_test_fft(:,1:end-1,:); % cut last sample (fft generates L+1 samples)
 
@@ -251,5 +252,5 @@ X_dev = cat(3,X_dev_dup,X_dev_fft);
 X_test = cat(3,X_test_dup,X_test_fft);
 
 % Save concatenated data
-save('data/data_time_and_fft_dup.mat','X_train','Y_train','X_dev','Y_dev','X_test','Y_test');
+save('data/data_time_and_fft_dup.mat','X_train','Y_train','X_dev','Y_dev','X_test','Y_test','-v7.3');
 
