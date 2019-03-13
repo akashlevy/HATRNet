@@ -105,3 +105,4 @@ venv.bak/
 
 # AWS PEM Key
 dlgpu.PEM
+data/data_time_and_fft.mat

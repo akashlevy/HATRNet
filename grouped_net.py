@@ -67,7 +67,7 @@ def percept_leg(input, conv1_block, base_filter_num, conv1_kernel, conv2_kernel,
     x = Dropout(drop)(x)
     x = GlobalAveragePooling2D()(x)
     x = Dropout(drop)(x)
-    output = Dense(units=13, activation='softmax')(x)
+    output = Dense(units=8, activation='softmax')(x)
     return output
 
 
@@ -80,7 +80,7 @@ def model_architecture(X_train, architecture, conv1_block, base_filter_num, conv
         f = percept_leg(f, conv1_block, base_filter_num, conv1_kernel, conv2_kernel, drop)
         x = concatenate([t, f])
         x = Dense(dense_size, activation='relu')(x)
-        output = Dense(units=13, activation='softmax')(x)
+        output = Dense(units=8, activation='softmax')(x)
     model = Model(inputs=[input], outputs=[output])
     #plot_model(model, to_file='Network_Figures/'+str(architecture)+'.png', show_shapes=True)
     model.summary()
