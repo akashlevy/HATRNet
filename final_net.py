@@ -45,6 +45,22 @@ def filter_num(base_filter_num, c, block_num):
     return base_filter_num*(2**(f_pow-1))
 
 
+def percept_leg(input, conv1_block, base_filter_num, conv1_kernel, conv2_kernel, drop):
+    x = input
+    for c1 in range(1, conv1_block+1):
+        x = Conv2D(filters=filter_num(base_filter_num, c1, conv1_block), kernel_size=conv1_kernel, activation='relu', padding='same')(x)
+        x = BatchNormalization()(x)
+        x = MaxPooling2D(pool_size=(2,1))(x)
+        x = Dropout(drop)(x)
+    x = Conv2D(filters=base_filter_num, kernel_size=conv2_kernel, strides=(1,3),  activation = 'relu', padding='same')(x)
+    x = BatchNormalization()(x)
+    x = Dropout(drop)(x)
+    x = GlobalAveragePooling2D()(x)
+    x = Dropout(drop)(x)
+    output = Dense(units=13, activation='softmax')(x)
+    return output
+
+
 def model_architecture(X_train, architecture, conv1_block, base_filter_num, conv1_kernel, conv2_kernel, dense_size, drop):
     if architecture=='perceptnet':
         input = Input((X_train.shape[1], X_train.shape[2], X_train.shape[3]))
@@ -65,12 +81,12 @@ def train_model(X_train, Y_train, X_dev, Y_dev, architecture, conv1_block, base_
     model = model_architecture(X_train, architecture, conv1_block, base_filter_num, conv1_kernel, conv2_kernel, dense_size, drop)
     opt = Adam(lr=learning_rate)
     model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
-    early_stopper = EarlyStopping(patience=5, verbose=1)
+    early_stopper = EarlyStopping(patience=15, verbose=1)
     check_pointer = ModelCheckpoint(filepath='Trained_Networks/network.hdf5', verbose=1, save_best_only=True)
     model.fit(X_train, Y_train, batch_size=batch_size, epochs=100, shuffle='true', callbacks=[early_stopper, check_pointer], validation_data=(X_dev, Y_dev))
 
 
-def run_experiment(dataset='time_and_frequency', architecture='perceptnet', conv1_block=4, base_filter_num=32, conv1_kernel=(20,1), conv2_kernel=(20,3), dense_size=20, drop=0.4, batch_size=32, learning_rate=0.001, min_loss):
+def run_experiment(dataset='time_and_frequency', architecture='perceptnet', conv1_block=4, base_filter_num=32, conv1_kernel=(20,1), conv2_kernel=(20,3), dense_size=20, drop=0.4, batch_size=32, learning_rate=0.001, min_loss=0):
     X_train, X_dev, X_test, Y_train, Y_dev, Y_test = load_data(dataset)
     train_model(X_train, Y_train, X_dev, Y_dev, architecture, conv1_block, base_filter_num, conv1_kernel, conv2_kernel, dense_size, drop, batch_size, learning_rate)
     evaluation, predictions = evaluate_experiment(X_dev, Y_dev, architecture, min_loss) # evaluate on dev set -> hyperparam search
@@ -111,7 +127,7 @@ for j in range(20):
                                              dense_size=dense_size,
                                              drop=drop,
                                              batch_size=batch_size,
-                                             learning_rate=learning_rate
+                                             learning_rate=learning_rate,
                                              min_loss=min_loss)
     print(evaluation)
     if min_loss > evaluation[0]:
