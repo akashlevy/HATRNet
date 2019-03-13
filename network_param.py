@@ -215,12 +215,12 @@ def evaluate_experiment(X_test, Y_test, architecture):
 ##     architecture = saimese_perceptnet
 ####################################################################
 
-with open('Results/hyperparm_results.csv', mode='w') as results_file:
+with open('Results/hyperparam_results.csv', mode='w') as results_file:
     results_file = csv.writer(results_file, delimiter=',')
     results_file.writerow(['#Run','conv1_block', 'base_filter_num', 'conv1_kernel', 'conv2_kernel', 'dense_size', 'drop', 'batch_size', 'learning_rate', 'avg_loss_validation', 'avg_accuracy_validation'])
     
 
-for i in range(1000): # number of different configuration
+for i in range(1000): # number of different configurations
     conv1_block=randint(1,6)
     base_filter_num=randint(2,50)
     conv1_kernel=randint(2,50)
@@ -252,7 +252,7 @@ for i in range(1000): # number of different configuration
     avg_loss = avg_loss/(j+1)
     avg_accuracy = avg_accuracy/(j+1)
 
-    with open('Results/hyperparm_results.csv', mode='a') as results_file:
+    with open('Results/hyperparam_results.csv', mode='a') as results_file:
         results_file = csv.writer(results_file, delimiter=',')
         results_file.writerow([i,conv1_block, base_filter_num, conv1_kernel, conv2_kernel, dense_size, drop, batch_size, learning_rate, avg_loss, avg_accuracy])
 

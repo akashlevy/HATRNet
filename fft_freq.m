@@ -1,4 +1,4 @@
-function [f,Y] = fft_freq(y,Fs,n,indexStart,indexEnd,highPassFlag)
+function [f,Y,Ph] = fft_freq(y,Fs,n,indexStart,indexEnd,highPassFlag)
 
     % If length of DFT is not specified, assume the default (length of time
     % domain vector, y)
@@ -13,6 +13,7 @@ function [f,Y] = fft_freq(y,Fs,n,indexStart,indexEnd,highPassFlag)
     xdft = 1/length(y).*xdft;
     xdft(2:end-1) = 2*xdft(2:end-1);
     Y = abs(xdft);
+    Ph = angle(xdft);
     f = [0:Fs/n:Fs/2]';
     
     % Specify a starting and ending index (when you want to specify a range
