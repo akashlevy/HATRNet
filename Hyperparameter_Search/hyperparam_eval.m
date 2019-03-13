@@ -22,9 +22,9 @@ N = 80;
 filter_coeff = ones(1,N)/N;
 avg_accuracy = filtfilt(filter_coeff, 1, [avg_accuracy_validation(i(1:N));avg_accuracy_validation(i)]);
 figure();
-semilogx(lr_sort,avg_accuracy_validation(i));
+semilogx(lr_sort,avg_accuracy_validation(i)*100);
 hold on;
-semilogx(lr_sort,avg_accuracy(N+1:end), 'LineWidth', 1.5);
+semilogx(lr_sort,avg_accuracy(N+1:end)*100, 'LineWidth', 1.5);
 xlabel('Learning rate');
 ylabel('Validation accuracy in %');
 legend('Raw data', 'Smoothed data');
@@ -47,8 +47,14 @@ while i<=stop
     end
     i=i+1;
 end
+% Filter
+N = 5;
+filter_coeff = ones(1,N)/N;
+bfn_median_filt = filtfilt(filter_coeff, 1, [bfn_median(1:N),bfn_median]);
 figure();
 stem(1:stop,bfn_median);
+hold on;
+plot(1:stop,bfn_median_filt(6:end), 'LineWidth', 1.5);
 xlabel('Number of filters in first 1D convolution block');
 ylabel('Median validation accuracy in %');
 
@@ -115,9 +121,9 @@ N = 80;
 filter_coeff = ones(1,N)/N;
 avg_accuracy = filtfilt(filter_coeff, 1, [avg_accuracy_validation(i(1:N));avg_accuracy_validation(i)]);
 figure();
-plot(drop_sort,avg_accuracy_validation(i));
+plot(drop_sort*100,avg_accuracy_validation(i)*100);
 hold on;
-semilogx(drop_sort,avg_accuracy(N+1:end), 'LineWidth', 1.5);
-xlabel('Dropout percentage');
+plot(drop_sort*100,avg_accuracy(N+1:end)*100, 'LineWidth', 1.5);
+xlabel('Dropout in %');
 ylabel('Validation accuracy in %');
 legend('Raw data', 'Smoothed data');
