@@ -89,7 +89,7 @@ def train_model(X_train, Y_train, X_dev, Y_dev, architecture, conv1_block, base_
 def run_experiment(dataset='time_and_frequency', architecture='perceptnet', conv1_block=4, base_filter_num=32, conv1_kernel=(20,1), conv2_kernel=(20,3), dense_size=20, drop=0.4, batch_size=32, learning_rate=0.001, min_loss=0):
     X_train, X_dev, X_test, Y_train, Y_dev, Y_test = load_data(dataset)
     train_model(X_train, Y_train, X_dev, Y_dev, architecture, conv1_block, base_filter_num, conv1_kernel, conv2_kernel, dense_size, drop, batch_size, learning_rate)
-    evaluation, predictions = evaluate_experiment(X_dev, Y_dev, architecture, min_loss) # evaluate on dev set -> hyperparam search
+    evaluation, predictions = evaluate_experiment(X_test, Y_test, architecture, min_loss) # evaluate on test set
     return evaluation, predictions
 
 
@@ -105,20 +105,35 @@ def evaluate_experiment(X_test, Y_test, architecture, min_loss):
     return evaluation, predictions
 
 
+def plot_confusion_matrix(Y_true, Y_pred, architecture):
+    matrix = confusion_matrix(Y_true.argmax(axis=1), Y_pred.argmax(axis=1))
+    plt.figure()
+    plt.imshow(matrix, interpolation='nearest')
+    plt.colorbar()
+    fmt = 'd'
+    thresh = matrix.max() / 2.
+    for i, j in itertools.product(range(matrix.shape[0]), range(matrix.shape[1])):
+        plt.text(j, i, format(matrix[i, j], fmt), horizontalalignment="center", color="white")
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    plt.tight_layout()
+    plt.show()
+    plt.savefig('Results/confmat_%s.png' % architecture)
+
+
 conv1_block=2
-base_filter_num=60
+base_filter_num=120
 conv1_kernel=14
 conv2_kernel=42
 dense_size=71
 drop=0.365952189776869
 batch_size=16 # (powers of 2)
 learning_rate=0.002602647881969
-min_loss = 0
+min_loss = 1000
 max_accuracy = 0
+avg_loss = 0
+avg_accuracy = 0
 for j in range(20):
-    avg_loss = 0
-    avg_accuracy = 0
-
     evaluation, predictions = run_experiment(dataset='time_and_frequency', 
                                              architecture='perceptnet', 
                                              conv1_block=conv1_block,
@@ -132,12 +147,17 @@ for j in range(20):
     print(evaluation)
     if min_loss > evaluation[0]:
         min_loss = evaluation[0]
-    if max_accuracy < evaluation[1]:
         max_accuracy = evaluation[1]
     avg_loss += evaluation[0]
     avg_accuracy += evaluation[1]
     K.clear_session() # clears session to prevent slowdown
 avg_loss = avg_loss/(j+1)
 avg_accuracy = avg_accuracy/(j+1)
-print('Average Loss:', avg_loss, 'Average Accuracy:', avg_accuracy)
-print('Minimum Loss:', min_loss, 'Max Accuracy:', max_accuracy)
+
+print('Average Loss (test set):', avg_loss, 'Average Accuracy (test set):', avg_accuracy)
+print('Minimum Loss (test set):', min_loss, 'Max Accuracy (test set):', max_accuracy)
+
+_, _, X_test, _, _, Y_test = load_data('time_and_frequency')
+loaded_model = load_model('Trained_Networks/final_network.hdf5')  # Loads best model
+predictions = loaded_model.predict(X_test) # Makes the predictions from the loaded model
+plot_confusion_matrix(Y_test, predictions,'perceptnet') # Plots confusion matrix

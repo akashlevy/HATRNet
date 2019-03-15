@@ -126,10 +126,9 @@ for i in range(1000): # number of different configurations
     batch_size=pow(2,randint(3,5)) #  (powers of 2)
     learning_rate=np.logspace(-4,-2,1000)[randint(0,999)]
 
+    avg_loss = 0
+    avg_accuracy = 0
     for j in range(1): # average over n runs for each configuration (n=1 for coarse search, n>1 for fine search)
-        avg_loss = 0
-        avg_accuracy = 0
-   
         evaluation, predictions = run_experiment(dataset='time_and_frequency', 
                         architecture='perceptnet', 
                         conv1_block=conv1_block,
