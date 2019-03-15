@@ -122,7 +122,7 @@ def plot_confusion_matrix(Y_true, Y_pred, architecture):
 
 
 conv1_block=2
-base_filter_num=120
+base_filter_num=60
 conv1_kernel=14
 conv2_kernel=42
 dense_size=71
